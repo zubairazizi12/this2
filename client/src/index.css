@@ -1,0 +1,275 @@
+/* Dari/Farsi Font Support */
+@import url('https://fonts.googleapis.com/css2?family=Vazirmatn:wght@100;200;300;400;500;600;700;800;900&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* RTL Support */
+html[dir="rtl"] * {
+  direction: rtl;
+}
+
+html[dir="rtl"] .ltr {
+  direction: ltr;
+}
+
+:root {
+  --background: hsl(0 0% 100%);
+  --foreground: hsl(210 25% 7.8431%);
+  --card: hsl(180 6.6667% 97.0588%);
+  --card-foreground: hsl(210 25% 7.8431%);
+  --popover: hsl(0 0% 100%);
+  --popover-foreground: hsl(210 25% 7.8431%);
+  --primary: hsl(203.8863 88.2845% 53.1373%);
+  --primary-foreground: hsl(0 0% 100%);
+  --secondary: hsl(210 25% 7.8431%);
+  --secondary-foreground: hsl(0 0% 100%);
+  --muted: hsl(240 1.9608% 90%);
+  --muted-foreground: hsl(210 25% 7.8431%);
+  --accent: hsl(211.5789 51.3514% 92.7451%);
+  --accent-foreground: hsl(203.8863 88.2845% 53.1373%);
+  --destructive: hsl(356.3033 90.5579% 54.3137%);
+  --destructive-foreground: hsl(0 0% 100%);
+  --border: hsl(201.4286 30.4348% 90.9804%);
+  --input: hsl(200 23.0769% 97.4510%);
+  --ring: hsl(202.8169 89.1213% 53.1373%);
+  --chart-1: hsl(203.8863 88.2845% 53.1373%);
+  --chart-2: hsl(159.7826 100% 36.0784%);
+  --chart-3: hsl(42.0290 92.8251% 56.2745%);
+  --chart-4: hsl(147.1429 78.5047% 41.9608%);
+  --chart-5: hsl(341.4894 75.2000% 50.9804%);
+  --sidebar: hsl(180 6.6667% 97.0588%);
+  --sidebar-foreground: hsl(210 25% 7.8431%);
+  --sidebar-primary: hsl(203.8863 88.2845% 53.1373%);
+  --sidebar-primary-foreground: hsl(0 0% 100%);
+  --sidebar-accent: hsl(211.5789 51.3514% 92.7451%);
+  --sidebar-accent-foreground: hsl(203.8863 88.2845% 53.1373%);
+  --sidebar-border: hsl(205.0000 25.0000% 90.5882%);
+  --sidebar-ring: hsl(202.8169 89.1213% 53.1373%);
+  --font-sans: Inter, sans-serif;
+  --font-serif: Georgia, serif;
+  --font-mono: Menlo, monospace;
+  --radius: 1.3rem;
+  --hospital-green-50: hsl(152 76% 96%);
+  --hospital-green-100: hsl(148 79% 90%);
+  --hospital-green-200: hsl(149 75% 80%);
+  --hospital-green-300: hsl(147 71% 67%);
+  --hospital-green-400: hsl(142 69% 58%);
+  --hospital-green-500: hsl(142 71% 45%);
+  --hospital-green-600: hsl(142 76% 36%);
+  --hospital-green-700: hsl(142 72% 29%);
+  --hospital-green-800: hsl(143 64% 24%);
+  --hospital-green-900: hsl(144 61% 20%);
+}
+
+.dark {
+  --background: hsl(0 0% 0%);
+  --foreground: hsl(200 6.6667% 91.1765%);
+  --card: hsl(228 9.8039% 10%);
+  --card-foreground: hsl(0 0% 85.0980%);
+  --popover: hsl(0 0% 0%);
+  --popover-foreground: hsl(200 6.6667% 91.1765%);
+  --primary: hsl(203.7736 87.6033% 52.5490%);
+  --primary-foreground: hsl(0 0% 100%);
+  --secondary: hsl(195.0000 15.3846% 94.9020%);
+  --secondary-foreground: hsl(210 25% 7.8431%);
+  --muted: hsl(0 0% 9.4118%);
+  --muted-foreground: hsl(210 3.3898% 46.2745%);
+  --accent: hsl(205.7143 70% 7.8431%);
+  --accent-foreground: hsl(203.7736 87.6033% 52.5490%);
+  --destructive: hsl(356.3033 90.5579% 54.3137%);
+  --destructive-foreground: hsl(0 0% 100%);
+  --border: hsl(210 5.2632% 14.9020%);
+  --input: hsl(207.6923 27.6596% 18.4314%);
+  --ring: hsl(202.8169 89.1213% 53.1373%);
+  --chart-1: hsl(203.8863 88.2845% 53.1373%);
+  --chart-2: hsl(159.7826 100% 36.0784%);
+  --chart-3: hsl(42.0290 92.8251% 56.2745%);
+  --chart-4: hsl(147.1429 78.5047% 41.9608%);
+  --chart-5: hsl(341.4894 75.2000% 50.9804%);
+  --sidebar: hsl(228 9.8039% 10%);
+  --sidebar-foreground: hsl(0 0% 85.0980%);
+  --sidebar-primary: hsl(202.8169 89.1213% 53.1373%);
+  --sidebar-primary-foreground: hsl(0 0% 100%);
+  --sidebar-accent: hsl(205.7143 70% 7.8431%);
+  --sidebar-accent-foreground: hsl(203.7736 87.6033% 52.5490%);
+  --sidebar-border: hsl(205.7143 15.7895% 26.0784%);
+  --sidebar-ring: hsl(202.8169 89.1213% 53.1373%);
+  --font-sans: Inter, sans-serif;
+  --font-serif: Georgia, serif;
+  --font-mono: Menlo, monospace;
+  --radius: 1.3rem;
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply font-sans antialiased bg-background text-foreground;
+    font-family: 'Vazirmatn', 'Inter', sans-serif;
+  }
+}
+
+@layer utilities {
+  .bg-hospital-green-50 {
+    background-color: var(--hospital-green-50);
+  }
+  .bg-hospital-green-100 {
+    background-color: var(--hospital-green-100);
+  }
+  .bg-hospital-green-200 {
+    background-color: var(--hospital-green-200);
+  }
+  .bg-hospital-green-300 {
+    background-color: var(--hospital-green-300);
+  }
+  .bg-hospital-green-400 {
+    background-color: var(--hospital-green-400);
+  }
+  .bg-hospital-green-500 {
+    background-color: var(--hospital-green-500);
+  }
+  .bg-hospital-green-600 {
+    background-color: var(--hospital-green-600);
+  }
+  .bg-hospital-green-700 {
+    background-color: var(--hospital-green-700);
+  }
+  .bg-hospital-green-800 {
+    background-color: var(--hospital-green-800);
+  }
+  .bg-hospital-green-900 {
+    background-color: var(--hospital-green-900);
+  }
+  
+  .text-hospital-green-50 {
+    color: var(--hospital-green-50);
+  }
+  .text-hospital-green-100 {
+    color: var(--hospital-green-100);
+  }
+  .text-hospital-green-200 {
+    color: var(--hospital-green-200);
+  }
+  .text-hospital-green-300 {
+    color: var(--hospital-green-300);
+  }
+  .text-hospital-green-400 {
+    color: var(--hospital-green-400);
+  }
+  .text-hospital-green-500 {
+    color: var(--hospital-green-500);
+  }
+  .text-hospital-green-600 {
+    color: var(--hospital-green-600);
+  }
+  .text-hospital-green-700 {
+    color: var(--hospital-green-700);
+  }
+  .text-hospital-green-800 {
+    color: var(--hospital-green-800);
+  }
+  .text-hospital-green-900 {
+    color: var(--hospital-green-900);
+  }
+  
+  .border-hospital-green-50 {
+    border-color: var(--hospital-green-50);
+  }
+  .border-hospital-green-100 {
+    border-color: var(--hospital-green-100);
+  }
+  .border-hospital-green-200 {
+    border-color: var(--hospital-green-200);
+  }
+  .border-hospital-green-300 {
+    border-color: var(--hospital-green-300);
+  }
+  .border-hospital-green-400 {
+    border-color: var(--hospital-green-400);
+  }
+  .border-hospital-green-500 {
+    border-color: var(--hospital-green-500);
+  }
+  .border-hospital-green-600 {
+    border-color: var(--hospital-green-600);
+  }
+  .border-hospital-green-700 {
+    border-color: var(--hospital-green-700);
+  }
+  .border-hospital-green-800 {
+    border-color: var(--hospital-green-800);
+  }
+  .border-hospital-green-900 {
+    border-color: var(--hospital-green-900);
+  }
+
+  .hover\:bg-hospital-green-50:hover {
+    background-color: var(--hospital-green-50);
+  }
+  .hover\:bg-hospital-green-100:hover {
+    background-color: var(--hospital-green-100);
+  }
+  .hover\:bg-hospital-green-200:hover {
+    background-color: var(--hospital-green-200);
+  }
+  .hover\:bg-hospital-green-300:hover {
+    background-color: var(--hospital-green-300);
+  }
+  .hover\:bg-hospital-green-400:hover {
+    background-color: var(--hospital-green-400);
+  }
+  .hover\:bg-hospital-green-500:hover {
+    background-color: var(--hospital-green-500);
+  }
+  .hover\:bg-hospital-green-600:hover {
+    background-color: var(--hospital-green-600);
+  }
+  .hover\:bg-hospital-green-700:hover {
+    background-color: var(--hospital-green-700);
+  }
+  .hover\:bg-hospital-green-800:hover {
+    background-color: var(--hospital-green-800);
+  }
+  .hover\:bg-hospital-green-900:hover {
+    background-color: var(--hospital-green-900);
+  }
+
+  .hover\:text-hospital-green-50:hover {
+    color: var(--hospital-green-50);
+  }
+  .hover\:text-hospital-green-100:hover {
+    color: var(--hospital-green-100);
+  }
+  .hover\:text-hospital-green-200:hover {
+    color: var(--hospital-green-200);
+  }
+  .hover\:text-hospital-green-300:hover {
+    color: var(--hospital-green-300);
+  }
+  .hover\:text-hospital-green-400:hover {
+    color: var(--hospital-green-400);
+  }
+  .hover\:text-hospital-green-500:hover {
+    color: var(--hospital-green-500);
+  }
+  .hover\:text-hospital-green-600:hover {
+    color: var(--hospital-green-600);
+  }
+  .hover\:text-hospital-green-700:hover {
+    color: var(--hospital-green-700);
+  }
+  .hover\:text-hospital-green-800:hover {
+    color: var(--hospital-green-800);
+  }
+  .hover\:text-hospital-green-900:hover {
+    color: var(--hospital-green-900);
+  }
+
+  .hover\:border-hospital-green-300:hover {
+    border-color: var(--hospital-green-300);
+  }
+}

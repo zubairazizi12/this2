@@ -1,0 +1,70 @@
+modules = ["nodejs-20", "web"]
+[agent]
+expertMode = true
+
+[workflows]
+runButton = "Project"
+
+[[workflows.workflow]]
+name = "Project"
+mode = "parallel"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "Server"
+
+[[workflows.workflow]]
+name = "Server"
+author = "agent"
+
+[workflows.workflow.metadata]
+outputType = "webview"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "npm run dev"
+waitForPort = 5000
+
+[[ports]]
+localPort = 5000
+externalPort = 80
+
+[[ports]]
+localPort = 33295
+externalPort = 3000
+
+[[ports]]
+localPort = 33855
+externalPort = 5000
+
+[[ports]]
+localPort = 36925
+externalPort = 3002
+
+[[ports]]
+localPort = 36927
+externalPort = 6000
+
+[[ports]]
+localPort = 38723
+externalPort = 8000
+
+[[ports]]
+localPort = 40985
+externalPort = 5173
+
+[[ports]]
+localPort = 43871
+externalPort = 3003
+
+[[ports]]
+localPort = 45853
+externalPort = 6800
+
+[[ports]]
+localPort = 46465
+externalPort = 3001
+
+[nix]
+channel = "stable-25_05"

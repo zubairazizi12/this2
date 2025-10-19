@@ -1,0 +1,187 @@
+modules\mongoose\lib\error\validation.js:52:26)
+    at formatValue (node:internal/util/inspect:850:19)
+    at inspect (node:internal/util/inspect:387:10)
+    at formatWithOptionsInternal (node:internal/util/inspect:2366:40) 
+    at formatWithOptions (node:internal/util/inspect:2228:10)
+    at console.value (node:internal/console/constructor:345:14)       
+    at console.error (node:internal/console/constructor:412:61)       
+    at <anonymous> (C:\Users\DELL\Downloads\New\this\server\routes\lectureRoutes.ts:31:13)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5) {
+  errors: {
+    date: CastError: Cast to date failed for value "Invalid Date" (type Date) at path "date"
+        at SchemaDate.cast (C:\Users\DELL\Downloads\New\this\node_modules\mongoose\lib\schema\date.js:377:11)
+        at SchemaType.applySetters (C:\Users\DELL\Downloads\New\this\node_modules\mongoose\lib\schemaType.js:1258:12)
+        at model.$set (C:\Users\DELL\Downloads\New\this\node_modules\mongoose\lib\document.js:1438:22)
+        at model.$set (C:\Users\DELL\Downloads\New\this\node_modules\mongoose\lib\document.js:1132:16)
+        at model.Document (C:\Users\DELL\Downloads\New\this\node_modules\mongoose\lib\document.js:178:12)
+        at model.Model (C:\Users\DELL\Downloads\New\this\node_modules\mongoose\lib\model.js:127:12)
+        at new model (C:\Users\DELL\Downloads\New\this\node_modules\mongoose\lib\model.js:4834:15)
+        at <anonymous> (C:\Users\DELL\Downloads\New\this\server\routes\lectureRoutes.ts:21:21)
+        at Layer.handle [as handle_request] (C:\Users\DELL\Downloads\New\this\node_modules\express\lib\router\layer.js:95:5)
+        at next (C:\Users\DELL\Downloads\New\this\node_modules\express\lib\router\route.js:149:13)
+        at Route.dispatch (C:\Users\DELL\Downloads\New\this\node_modules\express\lib\router\route.js:119:3)
+        at Layer.handle [as handle_request] (C:\Users\DELL\Downloads\New\this\node_modules\express\lib\router\layer.js:95:5)
+        at C:\Users\DELL\Downloads\New\this\node_modules\express\lib\router\index.js:284:15
+        at Function.process_params (C:\Users\DELL\Downloads\New\this\node_modules\express\lib\router\index.js:346:12)
+        at next (C:\Users\DELL\Downloads\New\this\node_modules\express\lib\router\index.js:280:10)
+        at Function.handle (C:\Users\DELL\Downloads\New\this\node_modules\express\lib\router\index.js:175:3)
+        at router (C:\Users\DELL\Downloads\New\this\node_modules\express\lib\router\index.js:47:12)
+        at Layer.handle [as handle_request] (C:\Users\DELL\Downloads\New\this\node_modules\express\lib\router\layer.js:95:5)
+        at trim_prefix (C:\Users\DELL\Downloads\New\this\node_modules\express\lib\router\index.js:328:13)
+        at C:\Users\DELL\Downloads\New\this\node_modules\express\lib\router\index.js:286:9
+        at Function.process_params (C:\Users\DELL\Downloads\New\this\node_modules\express\lib\router\index.js:346:12)
+        at next (C:\Users\DELL\Downloads\New\this\node_modules\express\lib\router\index.js:280:10)
+        at isDemoAuthenticated (C:\Users\DELL\Downloads\New\this\server\demoAuth.ts:146:10)
+        at Layer.handle [as handle_request] (C:\Users\DELL\Downloads\New\this\node_modules\express\lib\router\layer.js:95:5)
+        at trim_prefix (C:\Users\DELL\Downloads\New\this\node_modules\express\lib\router\index.js:328:13)
+        at C:\Users\DELL\Downloads\New\this\node_modules\express\lib\router\index.js:286:9
+        at Function.process_params (C:\Users\DELL\Downloads\New\this\node_modules\express\lib\router\index.js:346:12)
+        at next (C:\Users\DELL\Downloads\New\this\node_modules\express\lib\router\index.js:280:10)
+        at Immediate.<anonymous> (C:\Users\DELL\Downloads\New\this\node_modules\express-session\index.js:514:7)
+        at process.processImmediate (node:internal/timers:507:21) {   
+      stringValue: '"Invalid Date"',
+      messageFormat: undefined,
+      kind: 'date',
+      value: Invalid Date,
+      path: 'date',
+      reason: AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:
+
+        assert.ok(!isNaN(value.valueOf()))
+
+          at castDate (C:\Users\DELL\Downloads\New\this\node_modules\mongoose\lib\cast\date.js:13:12)
+          at SchemaDate.cast (C:\Users\DELL\Downloads\New\this\node_modules\mongoose\lib\schema\date.js:375:12)
+          at SchemaType.applySetters (C:\Users\DELL\Downloads\New\this\node_modules\mongoose\lib\schemaType.js:1258:12)
+          at model.$set (C:\Users\DELL\Downloads\New\this\node_modules\mongoose\lib\document.js:1438:22)
+          at model.$set (C:\Users\DELL\Downloads\New\this\node_modules\mongoose\lib\document.js:1132:16)
+          at model.Document (C:\Users\DELL\Downloads\New\this\node_modules\mongoose\lib\document.js:178:12)
+          at model.Model (C:\Users\DELL\Downloads\New\this\node_modules\mongoose\lib\model.js:127:12)
+          at new model (C:\Users\DELL\Downloads\New\this\node_modules\mongoose\lib\model.js:4834:15)
+          at <anonymous> (C:\Users\DELL\Downloads\New\this\server\routes\lectureRoutes.ts:21:21)
+          at Layer.handle [as handle_request] (C:\Users\DELL\Downloads\New\this\node_modules\express\lib\router\layer.js:95:5)
+          at next (C:\Users\DELL\Downloads\New\this\node_modules\express\lib\router\route.js:149:13)
+          at Route.dispatch (C:\Users\DELL\Downloads\New\this\node_modules\express\lib\router\route.js:119:3)
+          at Layer.handle [as handle_request] (C:\Users\DELL\Downloads\New\this\node_modules\express\lib\router\layer.js:95:5)
+          at C:\Users\DELL\Downloads\New\this\node_modules\express\lib\router\index.js:284:15
+          at Function.process_params (C:\Users\DELL\Downloads\New\this\node_modules\express\lib\router\index.js:346:12)
+          at next (C:\Users\DELL\Downloads\New\this\node_modules\express\lib\router\index.js:280:10)
+          at Function.handle (C:\Users\DELL\Downloads\New\this\node_modules\express\lib\router\index.js:175:3)
+          at router (C:\Users\DELL\Downloads\New\this\node_modules\express\lib\router\index.js:47:12)
+          at Layer.handle [as handle_request] (C:\Users\DELL\Downloads\New\this\node_modules\express\lib\router\layer.js:95:5)
+          at trim_prefix (C:\Users\DELL\Downloads\New\this\node_modules\express\lib\router\index.js:328:13)
+          at C:\Users\DELL\Downloads\New\this\node_modules\express\lib\router\index.js:286:9
+          at Function.process_params (C:\Users\DELL\Downloads\New\this\node_modules\express\lib\router\index.js:346:12)
+          at next (C:\Users\DELL\Downloads\New\this\node_modules\express\lib\router\index.js:280:10)
+          at isDemoAuthenticated (C:\Users\DELL\Downloads\New\this\server\demoAuth.ts:146:10)
+          at Layer.handle [as handle_request] (C:\Users\DELL\Downloads\New\this\node_modules\express\lib\router\layer.js:95:5)
+          at trim_prefix (C:\Users\DELL\Downloads\New\this\node_modules\express\lib\router\index.js:328:13)
+          at C:\Users\DELL\Downloads\New\this\node_modules\express\lib\router\index.js:286:9
+          at Function.process_params (C:\Users\DELL\Downloads\New\this\node_modules\express\lib\router\index.js:346:12)
+          at next (C:\Users\DELL\Downloads\New\this\node_modules\express\lib\router\index.js:280:10)
+          at Immediate._onImmediate (C:\Users\DELL\Downloads\New\this\node_modules\express-session\index.js:514:7)
+          at process.processImmediate (node:internal/timers:507:21) { 
+        generatedMessage: true,
+        code: 'ERR_ASSERTION',
+        actual: false,
+        expected: true,
+        operator: '=='
+      },
+      valueType: 'Date'
+    }
+  },
+  _message: 'Lecture validation failed'
+}
+9:46:21 PM [express] POST /api/lectures 500 in 62ms :: {"message":"Failed to create lecture"}
+Error creating lecture: Error: Lecture validation failed: date: Cast to date failed for value "Invalid Date" (type Date) at path "date"     
+    at ValidationError.inspect (C:\Users\DELL\Downloads\New\this\node_modules\mongoose\lib\error\validation.js:52:26)
+    at formatValue (node:internal/util/inspect:850:19)
+    at inspect (node:internal/util/inspect:387:10)
+    at formatWithOptionsInternal (node:internal/util/inspect:2366:40) 
+    at formatWithOptions (node:internal/util/inspect:2228:10)
+    at console.value (node:internal/console/constructor:345:14)       
+    at console.error (node:internal/console/constructor:412:61)       
+    at <anonymous> (C:\Users\DELL\Downloads\New\this\server\routes\lectureRoutes.ts:31:13)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5) {
+  errors: {
+    date: CastError: Cast to date failed for value "Invalid Date" (type Date) at path "date"
+        at SchemaDate.cast (C:\Users\DELL\Downloads\New\this\node_modules\mongoose\lib\schema\date.js:377:11)
+        at SchemaType.applySetters (C:\Users\DELL\Downloads\New\this\node_modules\mongoose\lib\schemaType.js:1258:12)
+        at model.$set (C:\Users\DELL\Downloads\New\this\node_modules\mongoose\lib\document.js:1438:22)
+        at model.$set (C:\Users\DELL\Downloads\New\this\node_modules\mongoose\lib\document.js:1132:16)
+        at model.Document (C:\Users\DELL\Downloads\New\this\node_modules\mongoose\lib\document.js:178:12)
+        at model.Model (C:\Users\DELL\Downloads\New\this\node_modules\mongoose\lib\model.js:127:12)
+        at new model (C:\Users\DELL\Downloads\New\this\node_modules\mongoose\lib\model.js:4834:15)
+        at <anonymous> (C:\Users\DELL\Downloads\New\this\server\routes\lectureRoutes.ts:21:21)
+        at Layer.handle [as handle_request] (C:\Users\DELL\Downloads\New\this\node_modules\express\lib\router\layer.js:95:5)
+        at next (C:\Users\DELL\Downloads\New\this\node_modules\express\lib\router\route.js:149:13)
+        at Route.dispatch (C:\Users\DELL\Downloads\New\this\node_modules\express\lib\router\route.js:119:3)
+        at Layer.handle [as handle_request] (C:\Users\DELL\Downloads\New\this\node_modules\express\lib\router\layer.js:95:5)
+        at C:\Users\DELL\Downloads\New\this\node_modules\express\lib\router\index.js:284:15
+        at Function.process_params (C:\Users\DELL\Downloads\New\this\node_modules\express\lib\router\index.js:346:12)
+        at next (C:\Users\DELL\Downloads\New\this\node_modules\express\lib\router\index.js:280:10)
+        at Function.handle (C:\Users\DELL\Downloads\New\this\node_modules\express\lib\router\index.js:175:3)
+        at router (C:\Users\DELL\Downloads\New\this\node_modules\express\lib\router\index.js:47:12)
+        at Layer.handle [as handle_request] (C:\Users\DELL\Downloads\New\this\node_modules\express\lib\router\layer.js:95:5)
+        at trim_prefix (C:\Users\DELL\Downloads\New\this\node_modules\express\lib\router\index.js:328:13)
+        at C:\Users\DELL\Downloads\New\this\node_modules\express\lib\router\index.js:286:9
+        at Function.process_params (C:\Users\DELL\Downloads\New\this\node_modules\express\lib\router\index.js:346:12)
+        at next (C:\Users\DELL\Downloads\New\this\node_modules\express\lib\router\index.js:280:10)
+        at isDemoAuthenticated (C:\Users\DELL\Downloads\New\this\server\demoAuth.ts:146:10)
+        at Layer.handle [as handle_request] (C:\Users\DELL\Downloads\New\this\node_modules\express\lib\router\layer.js:95:5)
+        at trim_prefix (C:\Users\DELL\Downloads\New\this\node_modules\express\lib\router\index.js:328:13)
+        at C:\Users\DELL\Downloads\New\this\node_modules\express\lib\router\index.js:286:9
+        at Function.process_params (C:\Users\DELL\Downloads\New\this\node_modules\express\lib\router\index.js:346:12)
+        at next (C:\Users\DELL\Downloads\New\this\node_modules\express\lib\router\index.js:280:10)
+        at Immediate.<anonymous> (C:\Users\DELL\Downloads\New\this\node_modules\express-session\index.js:514:7)
+        at process.processImmediate (node:internal/timers:507:21) {   
+      stringValue: '"Invalid Date"',
+      messageFormat: undefined,
+      kind: 'date',
+      value: Invalid Date,
+      path: 'date',
+      reason: AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:
+
+        assert.ok(!isNaN(value.valueOf()))
+
+          at castDate (C:\Users\DELL\Downloads\New\this\node_modules\mongoose\lib\cast\date.js:13:12)
+          at SchemaDate.cast (C:\Users\DELL\Downloads\New\this\node_modules\mongoose\lib\schema\date.js:375:12)
+          at SchemaType.applySetters (C:\Users\DELL\Downloads\New\this\node_modules\mongoose\lib\schemaType.js:1258:12)
+          at model.$set (C:\Users\DELL\Downloads\New\this\node_modules\mongoose\lib\document.js:1438:22)
+          at model.$set (C:\Users\DELL\Downloads\New\this\node_modules\mongoose\lib\document.js:1132:16)
+          at model.Document (C:\Users\DELL\Downloads\New\this\node_modules\mongoose\lib\document.js:178:12)
+          at model.Model (C:\Users\DELL\Downloads\New\this\node_modules\mongoose\lib\model.js:127:12)
+          at new model (C:\Users\DELL\Downloads\New\this\node_modules\mongoose\lib\model.js:4834:15)
+          at <anonymous> (C:\Users\DELL\Downloads\New\this\server\routes\lectureRoutes.ts:21:21)
+          at Layer.handle [as handle_request] (C:\Users\DELL\Downloads\New\this\node_modules\express\lib\router\layer.js:95:5)
+          at next (C:\Users\DELL\Downloads\New\this\node_modules\express\lib\router\route.js:149:13)
+          at Route.dispatch (C:\Users\DELL\Downloads\New\this\node_modules\express\lib\router\route.js:119:3)
+          at Layer.handle [as handle_request] (C:\Users\DELL\Downloads\New\this\node_modules\express\lib\router\layer.js:95:5)
+          at C:\Users\DELL\Downloads\New\this\node_modules\express\lib\router\index.js:284:15
+          at Function.process_params (C:\Users\DELL\Downloads\New\this\node_modules\express\lib\router\index.js:346:12)
+          at next (C:\Users\DELL\Downloads\New\this\node_modules\express\lib\router\index.js:280:10)
+          at Function.handle (C:\Users\DELL\Downloads\New\this\node_modules\express\lib\router\index.js:175:3)
+          at router (C:\Users\DELL\Downloads\New\this\node_modules\express\lib\router\index.js:47:12)
+          at Layer.handle [as handle_request] (C:\Users\DELL\Downloads\New\this\node_modules\express\lib\router\layer.js:95:5)
+          at trim_prefix (C:\Users\DELL\Downloads\New\this\node_modules\express\lib\router\index.js:328:13)
+          at C:\Users\DELL\Downloads\New\this\node_modules\express\lib\router\index.js:286:9
+          at Function.process_params (C:\Users\DELL\Downloads\New\this\node_modules\express\lib\router\index.js:346:12)
+          at next (C:\Users\DELL\Downloads\New\this\node_modules\express\lib\router\index.js:280:10)
+          at isDemoAuthenticated (C:\Users\DELL\Downloads\New\this\server\demoAuth.ts:146:10)
+          at Layer.handle [as handle_request] (C:\Users\DELL\Downloads\New\this\node_modules\express\lib\router\layer.js:95:5)
+          at trim_prefix (C:\Users\DELL\Downloads\New\this\node_modules\express\lib\router\index.js:328:13)
+          at C:\Users\DELL\Downloads\New\this\node_modules\express\lib\router\index.js:286:9
+          at Function.process_params (C:\Users\DELL\Downloads\New\this\node_modules\express\lib\router\index.js:346:12)
+          at next (C:\Users\DELL\Downloads\New\this\node_modules\express\lib\router\index.js:280:10)
+          at Immediate._onImmediate (C:\Users\DELL\Downloads\New\this\node_modules\express-session\index.js:514:7)
+          at process.processImmediate (node:internal/timers:507:21) { 
+        generatedMessage: true,
+        code: 'ERR_ASSERTION',
+        actual: false,
+        expected: true,
+        operator: '=='
+      },
+      valueType: 'Date'
+    }
+  },
+  _message: 'Lecture validation failed'
+}
+9:46:29 PM [express] POST /api/lectures 500 in 20ms :: {"message":"Failed to create lecture"}
