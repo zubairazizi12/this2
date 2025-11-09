@@ -10,6 +10,9 @@ import formHRoutes from "./routes/form-H";
 import monographEvaluationRoutes from "./routes/form-k";
 import rotationFormRoutes from "./routes/form-I";
 import { teacherActivityRoutes } from "./routes/form-J";
+import rotationFormRRoutes from "./routes/form-R";
+import trainerProgressRoutes from "./routes/trainerProgressRoutes.js";
+import checklistRoutes from "./routes/form-F";
 import path from "path";
 import { fileURLToPath } from "url";
 const app = express();
@@ -36,6 +39,11 @@ app.use("/api/evaluationFormG", evaluationFormGRoutes);
 app.use("/api/monographEvaluation", monographEvaluationRoutes);
 app.use("/api/rotation-form", rotationFormRoutes);
 app.use("/api/teacher-activities", teacherActivityRoutes);
+app.use("/api/rotation-form-r", rotationFormRRoutes);
+app.use("/api/trainerProgress", trainerProgressRoutes);
+ // Checklist routes
+  // استفاده از روتر
+  app.use("/api/checklists", checklistRoutes);
 
 // اضافه کردن ترینر
 app.use("/api/trainers", trainerRoutes);

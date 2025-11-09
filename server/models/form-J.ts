@@ -1,6 +1,5 @@
-
-// models/TeacherActivity.ts
 import mongoose, { Schema, Document } from "mongoose";
+import { TrainerProgress } from "./TrainerProgress"; // 👈 اضافه شد
 
 // 🔹 ساختار هر فعالیت
 interface IActivity {
@@ -48,21 +47,54 @@ const TeacherActivitySchema = new Schema<ITeacherActivity>(
     trainingYear: { type: String, required: true },
     teachers: {
       type: [String],
+      required: true,
       validate: {
         validator: (arr: string[]) => arr.length <= 5,
         message: "حداکثر ۵ استاد مجاز است",
       },
-      required: true,
     },
     activities: { type: [ActivitySchema], required: true },
   },
-  {
-    timestamps: true, // ایجاد فیلدهای createdAt و updatedAt
-  }
+  { timestamps: true }
 );
 
+// ✅ بعد از ذخیره، آیدی فرم را در TrainerProgress → forms.formJ ذخیره کن
+TeacherActivitySchema.post("save", async function (doc) {
+  try {
+    const trainerId = doc.trainerId;
+    const trainingYear = doc.trainingYear;
+
+    if (!trainerId || !trainingYear) return;
+
+    // پیدا کردن TrainerProgress
+    const progress = await TrainerProgress.findOne({ trainer: trainerId });
+    if (!progress) {
+      console.warn(`⚠️ TrainerProgress برای ترینر ${trainerId} پیدا نشد`);
+      return;
+    }
+
+    // پیدا کردن سال مربوطه
+    const yearRecord = progress.trainingHistory.find(
+      (y: any) => y.yearLabel === trainingYear
+    );
+
+    if (yearRecord) {
+      if (!yearRecord.forms) yearRecord.forms = {};
+      yearRecord.forms.formJ = doc._id; // ✅ فرم TeacherActivity در فرم J
+      await progress.save();
+
+      console.log(`✅ TeacherActivity linked to TrainerProgress (${trainingYear})`);
+    } else {
+      console.warn(
+        `⚠️ trainingYear "${trainingYear}" not found in TrainerProgress for trainer ${trainerId}`
+      );
+    }
+  } catch (error) {
+    console.error("❌ Error linking TeacherActivity to TrainerProgress:", error);
+  }
+});
+
 // 🔹 مدل نهایی
-export const TeacherActivityModel = mongoose.model<ITeacherActivity>(
-  "TeacherActivity",
-  TeacherActivitySchema
-);
+export const TeacherActivityModel =
+  mongoose.models.TeacherActivity ||
+  mongoose.model<ITeacherActivity>("TeacherActivity", TeacherActivitySchema);

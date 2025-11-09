@@ -39,7 +39,7 @@ export default function FormsReport() {
 
   return (
     <div className="overflow-x-auto bg-white rounded-xl shadow p-4">
-      <h2 className="text-lg font-semibold mb-4">گزارش ترینرها</h2>
+      <h2 className="text-lg font-semibold mb-4">گزارش ترینی ها</h2>
       <table className="min-w-full border border-gray-200 text-sm">
         <thead className="bg-gray-100">
           <tr>

@@ -3,7 +3,9 @@ import React, { useEffect, useState, useRef } from "react";
 import * as XLSX from "xlsx";
 
 interface FormDDetailsProps {
-  trainerId: string;
+  trainerId?: string;
+  formId?: string;
+  selectedYear: string;
   onClose?: () => void;
 }
 
@@ -29,32 +31,66 @@ interface FormD {
   hospitalHead?: string;
 }
 
-export default function FormDDetails({ trainerId, onClose }: FormDDetailsProps) {
+export default function FormDDetails({
+  trainerId,
+  formId,
+  selectedYear,
+  onClose,
+}: FormDDetailsProps) {
   const [data, setData] = useState<FormD | null>(null);
   const [editing, setEditing] = useState(false);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const printRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-        const res = await fetch(`/api/conference?trainerId=${trainerId}`);
-        if (!res.ok) throw new Error("فرمی برای این ترینر موجود نیست");
-        const result = await res.json();
-        if (Array.isArray(result) && result.length > 0) setData(result[0]);
-        else if (result && typeof result === "object") setData(result);
-        else setData(null);
-      } catch (err) {
-        console.error("Error fetching form D:", err);
-        setData(null);
-      } finally {
-        setLoading(false);
+  const fetchData = async () => {
+    if (!trainerId) return;
+    setLoading(true);
+    setError(null);
+
+    try {
+      // 1️⃣ دریافت TrainerProgress
+      const progressRes = await fetch(
+        `http://localhost:5000/api/trainerProgress/${trainerId}`
+      );
+      if (!progressRes.ok) throw new Error("TrainerProgress یافت نشد");
+      const progress = await progressRes.json();
+
+      // 2️⃣ پیدا کردن سال انتخاب‌شده (یا فعلی)
+      const targetYearLabel = selectedYear || progress.currentTrainingYear;
+      const yearData = progress.trainingHistory.find(
+        (y: any) => y.yearLabel === targetYearLabel
+      );
+
+      if (!yearData) {
+        throw new Error(`سال ${targetYearLabel} در trainingHistory یافت نشد`);
       }
-    };
-    if (trainerId) fetchData();
-  }, [trainerId]);
+
+      // 3️⃣ گرفتن آیدی فرم D مربوطه
+      const formId = yearData.forms?.formD; // 👈 فرم D مخصوص آن سال
+
+      if (!formId) {
+        throw new Error(`فرم D برای ${targetYearLabel} هنوز ساخته نشده است`);
+      }
+
+      // 4️⃣ واکشی فرم واقعی از API مخصوص Form D
+      const res = await fetch(`http://localhost:5000/api/conference/${formId}`);
+      if (!res.ok) throw new Error("فرم D یافت نشد");
+      const result = await res.json();
+      setData(result);
+    } catch (err: any) {
+      console.error(err);
+      setError(err?.message || "خطا در بارگذاری فرم D");
+      setData(null);
+    } finally {
+      setLoading(false);
+    }
+  };
+  // ✅ نسخه اصلاح‌شده useEffect
+  useEffect(() => {
+    fetchData();
+  }, [trainerId, selectedYear]); // 👈 selectedYear اضافه شد
 
   const handlePrint = () => {
     if (!printRef.current) return;
@@ -127,12 +163,19 @@ export default function FormDDetails({ trainerId, onClose }: FormDDetailsProps) 
     }
   };
 
-  const handleChangeMainField = (field: keyof FormD, value: string | number) => {
+  const handleChangeMainField = (
+    field: keyof FormD,
+    value: string | number
+  ) => {
     if (!data) return;
     setData({ ...data, [field]: value });
   };
 
-  const handleConferenceChange = (idx: number, field: keyof Conference, value: string | number) => {
+  const handleConferenceChange = (
+    idx: number,
+    field: keyof Conference,
+    value: string | number
+  ) => {
     if (!data) return;
     const newConferences = [...data.conferences];
     newConferences[idx] = { ...newConferences[idx], [field]: value };
@@ -140,7 +183,9 @@ export default function FormDDetails({ trainerId, onClose }: FormDDetailsProps) 
   };
 
   if (loading)
-    return <div className="p-4 text-center text-gray-600">در حال بارگذاری...</div>;
+    return (
+      <div className="p-4 text-center text-gray-600">در حال بارگذاری...</div>
+    );
 
   if (!data)
     return (
@@ -172,13 +217,33 @@ export default function FormDDetails({ trainerId, onClose }: FormDDetailsProps) 
             </>
           ) : (
             <>
-              <button onClick={handlePrint} className="bg-green-600 text-white px-3 py-1 rounded">PDF</button>
-              <button onClick={handleExportExcel} className="bg-yellow-500 text-white px-3 py-1 rounded">Excel</button>
-              <button onClick={() => setEditing(true)} className="bg-blue-600 text-white px-3 py-1 rounded">ویرایش</button>
+              <button
+                onClick={handlePrint}
+                className="bg-green-600 text-white px-3 py-1 rounded"
+              >
+                PDF
+              </button>
+              <button
+                onClick={handleExportExcel}
+                className="bg-yellow-500 text-white px-3 py-1 rounded"
+              >
+                Excel
+              </button>
+              <button
+                onClick={() => setEditing(true)}
+                className="bg-blue-600 text-white px-3 py-1 rounded"
+              >
+                ویرایش
+              </button>
             </>
           )}
           {onClose && (
-            <button onClick={onClose} className="bg-gray-500 text-white px-3 py-1 rounded">بستن</button>
+            <button
+              onClick={onClose}
+              className="bg-gray-500 text-white px-3 py-1 rounded"
+            >
+              بستن
+            </button>
           )}
         </div>
       </div>
@@ -194,9 +259,13 @@ export default function FormDDetails({ trainerId, onClose }: FormDDetailsProps) 
                   <input
                     className="border rounded px-2 py-1 w-full"
                     value={data.name}
-                    onChange={(e) => handleChangeMainField("name", e.target.value)}
+                    onChange={(e) =>
+                      handleChangeMainField("name", e.target.value)
+                    }
                   />
-                ) : data.name}
+                ) : (
+                  data.name
+                )}
               </td>
               <td className="font-semibold border p-2">نام پدر</td>
               <td className="border p-2">
@@ -204,9 +273,13 @@ export default function FormDDetails({ trainerId, onClose }: FormDDetailsProps) 
                   <input
                     className="border rounded px-2 py-1 w-full"
                     value={data.parentType}
-                    onChange={(e) => handleChangeMainField("parentType", e.target.value)}
+                    onChange={(e) =>
+                      handleChangeMainField("parentType", e.target.value)
+                    }
                   />
-                ) : data.parentType}
+                ) : (
+                  data.parentType
+                )}
               </td>
             </tr>
             <tr>
@@ -216,9 +289,13 @@ export default function FormDDetails({ trainerId, onClose }: FormDDetailsProps) 
                   <input
                     className="border rounded px-2 py-1 w-full"
                     value={data.department}
-                    onChange={(e) => handleChangeMainField("department", e.target.value)}
+                    onChange={(e) =>
+                      handleChangeMainField("department", e.target.value)
+                    }
                   />
-                ) : data.department}
+                ) : (
+                  data.department
+                )}
               </td>
               <td className="font-semibold border p-2">سال آموزش</td>
               <td className="border p-2">
@@ -226,9 +303,13 @@ export default function FormDDetails({ trainerId, onClose }: FormDDetailsProps) 
                   <input
                     className="border rounded px-2 py-1 w-full"
                     value={data.trainingYear}
-                    onChange={(e) => handleChangeMainField("trainingYear", e.target.value)}
+                    onChange={(e) =>
+                      handleChangeMainField("trainingYear", e.target.value)
+                    }
                   />
-                ) : data.trainingYear}
+                ) : (
+                  data.trainingYear
+                )}
               </td>
             </tr>
           </tbody>
@@ -255,9 +336,17 @@ export default function FormDDetails({ trainerId, onClose }: FormDDetailsProps) 
                       <input
                         className="border rounded px-2 py-1 w-full"
                         value={conf.conferenceTitle}
-                        onChange={(e) => handleConferenceChange(idx, "conferenceTitle", e.target.value)}
+                        onChange={(e) =>
+                          handleConferenceChange(
+                            idx,
+                            "conferenceTitle",
+                            e.target.value
+                          )
+                        }
                       />
-                    ) : conf.conferenceTitle}
+                    ) : (
+                      conf.conferenceTitle
+                    )}
                   </td>
                   <td className="border p-2 text-center">
                     {editing ? (
@@ -265,9 +354,17 @@ export default function FormDDetails({ trainerId, onClose }: FormDDetailsProps) 
                         type="number"
                         className="border rounded px-2 py-1 w-full text-center"
                         value={conf.score}
-                        onChange={(e) => handleConferenceChange(idx, "score", Number(e.target.value))}
+                        onChange={(e) =>
+                          handleConferenceChange(
+                            idx,
+                            "score",
+                            Number(e.target.value)
+                          )
+                        }
                       />
-                    ) : conf.score}
+                    ) : (
+                      conf.score
+                    )}
                   </td>
                   <td className="border p-2 text-center">
                     {editing ? (
@@ -275,18 +372,30 @@ export default function FormDDetails({ trainerId, onClose }: FormDDetailsProps) 
                         type="date"
                         className="border rounded px-2 py-1 w-full text-center"
                         value={conf.date}
-                        onChange={(e) => handleConferenceChange(idx, "date", e.target.value)}
+                        onChange={(e) =>
+                          handleConferenceChange(idx, "date", e.target.value)
+                        }
                       />
-                    ) : conf.date}
+                    ) : (
+                      conf.date
+                    )}
                   </td>
                   <td className="border p-2">
                     {editing ? (
                       <input
                         className="border rounded px-2 py-1 w-full"
                         value={conf.teacherName}
-                        onChange={(e) => handleConferenceChange(idx, "teacherName", e.target.value)}
+                        onChange={(e) =>
+                          handleConferenceChange(
+                            idx,
+                            "teacherName",
+                            e.target.value
+                          )
+                        }
                       />
-                    ) : conf.teacherName}
+                    ) : (
+                      conf.teacherName
+                    )}
                   </td>
                 </tr>
               ))}
@@ -298,12 +407,24 @@ export default function FormDDetails({ trainerId, onClose }: FormDDetailsProps) 
         <table className="w-full border border-slate-300 mt-4 text-sm">
           <tbody>
             <tr>
-              <td className="font-semibold border p-2 text-center">رئیس دیپارتمنت</td>
-              <td className="border p-2 text-center">{data.departmentHead || "____________"}</td>
-              <td className="font-semibold border p-2 text-center">آمر برنامه تریننگ</td>
-              <td className="border p-2 text-center">{data.programHead || "____________"}</td>
-              <td className="font-semibold border p-2 text-center">رئیس شفاخانه</td>
-              <td className="border p-2 text-center">{data.hospitalHead || "____________"}</td>
+              <td className="font-semibold border p-2 text-center">
+                رئیس دیپارتمنت
+              </td>
+              <td className="border p-2 text-center">
+                {data.departmentHead || "____________"}
+              </td>
+              <td className="font-semibold border p-2 text-center">
+                آمر برنامه تریننگ
+              </td>
+              <td className="border p-2 text-center">
+                {data.programHead || "____________"}
+              </td>
+              <td className="font-semibold border p-2 text-center">
+                رئیس شفاخانه
+              </td>
+              <td className="border p-2 text-center">
+                {data.hospitalHead || "____________"}
+              </td>
             </tr>
           </tbody>
         </table>

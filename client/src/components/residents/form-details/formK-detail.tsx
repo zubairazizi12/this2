@@ -3,7 +3,9 @@ import React, { useEffect, useState, useRef } from "react";
 import * as XLSX from "xlsx";
 
 interface FormKDetailsProps {
-  trainerId: string;
+  trainerId?: string;
+  selectedYear: string;
+  formId?: string;
   onClose?: () => void;
 }
 
@@ -31,38 +33,75 @@ interface FormK {
   startYear: string;
   date: string;
   evaluations: Evaluation[];
+  summary: {
+    total: string;
+    average: string;
+    notes: string;
+  };
   supervisor?: string;
   departmentHead?: string;
   programHead?: string;
 }
 
-export default function FormKDetails({ trainerId, onClose }: FormKDetailsProps) {
+
+export default function FormKDetails({
+  trainerId,
+  formId,
+  selectedYear,
+  onClose,
+}: FormKDetailsProps) {
   const [data, setData] = useState<FormK | null>(null);
   const [editing, setEditing] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const printRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-        const res = await fetch(`/api/monographEvaluation?trainerId=${trainerId}`);
-        if (!res.ok) throw new Error("فرمی برای این ترینر موجود نیست");
-        const result = await res.json();
-        if (!result) setData(null);
-        else if (Array.isArray(result) && result.length > 0) setData(result[0]);
-        else if (result && typeof result === "object" && result._id) setData(result);
-        else setData(null);
-      } catch (err) {
-        console.error("Error fetching form K:", err);
+  // 📦 دریافت داده از سرور
+  const fetchData = async () => {
+    if (!trainerId) return;
+    setLoading(true);
+    setError(null);
+
+    try {
+      const progressRes = await fetch(
+        `http://localhost:5000/api/trainerProgress/${trainerId}`
+      );
+      if (!progressRes.ok) throw new Error("TrainerProgress یافت نشد");
+      const progress = await progressRes.json();
+
+      const targetYearLabel = selectedYear || progress.currentTrainingYear;
+      const yearData = progress.trainingHistory.find(
+        (y: any) => y.yearLabel === targetYearLabel
+      );
+
+      if (!yearData) throw new Error(`سال ${targetYearLabel} یافت نشد`);
+
+      const formId = yearData.forms?.formK;
+      if (!formId)
+        throw new Error(`فرم K برای ${targetYearLabel} هنوز ساخته نشده است`);
+
+      const res = await fetch(`/api/monographEvaluation/${formId}`);
+      if (res.status === 404) {
         setData(null);
-      } finally {
-        setLoading(false);
+        return;
       }
-    };
-    if (trainerId) fetchData();
-  }, [trainerId]);
+      if (!res.ok) throw new Error("فرم K یافت نشد");
+      const result = await res.json();
+
+      setData(result);
+    } catch (err: any) {
+      console.error(err);
+      setError(err?.message || "خطا در بارگذاری فرم K");
+      setData(null);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, [trainerId, selectedYear]);
 
   const handleSave = async () => {
     if (!data) return;
@@ -86,6 +125,23 @@ export default function FormKDetails({ trainerId, onClose }: FormKDetailsProps) 
     }
   };
 
+
+  const handleChangeMainField = (field: keyof FormK, value: string) => {
+    if (!data) return;
+    setData({ ...data, [field]: value });
+  };
+
+  const handleEvaluationChange = (
+    idx: number,
+    field: keyof Evaluation,
+    value: string | number | boolean
+  ) => {
+    if (!data) return;
+    const newEvaluations = [...data.evaluations];
+    newEvaluations[idx] = { ...newEvaluations[idx], [field]: value };
+    setData({ ...data, evaluations: newEvaluations });
+  };
+
   const handleExportExcel = () => {
     if (!data) return;
     const wb = XLSX.utils.book_new();
@@ -98,6 +154,7 @@ export default function FormKDetails({ trainerId, onClose }: FormKDetailsProps) 
       { فیلد: "سال آموزش", مقدار: data.trainingYear },
       { فیلد: "سال شروع", مقدار: data.startYear },
       { فیلد: "تاریخ", مقدار: data.date },
+      { فیلد: "یادداشت", مقدار: data.evaluations?.[0]?.notes || "" },
     ]);
     XLSX.utils.book_append_sheet(wb, detailsWS, "مشخصات");
 
@@ -110,18 +167,11 @@ export default function FormKDetails({ trainerId, onClose }: FormKDetailsProps) 
           "نمره داده شده": evaluation.score,
           "اسم استاد": evaluation.teacherName,
           ویژگی‌ها: evaluation.characteristics || "",
-          یادداشت‌ها: evaluation.notes || "",
+          یادداشت: evaluation.notes || "",
         }))
       );
       XLSX.utils.book_append_sheet(wb, evalWS, "ارزیابی‌ها");
     }
-
-    const signWS = XLSX.utils.json_to_sheet([
-      { مسئول: "استاد راهنما", نام: data.supervisor || "" },
-      { مسئول: "رئیس دیپارتمنت", نام: data.departmentHead || "" },
-      { مسئول: "آمر برنامه آموزشی", نام: data.programHead || "" },
-    ]);
-    XLSX.utils.book_append_sheet(wb, signWS, "امضاها");
 
     XLSX.writeFile(wb, `FormK_${data.name}_${data.lastName}.xlsx`);
   };
@@ -132,7 +182,6 @@ export default function FormKDetails({ trainerId, onClose }: FormKDetailsProps) 
     const printWindow = window.open("", "_blank", "width=1100,height=700");
     if (printWindow) {
       printWindow.document.write(`
-        <!DOCTYPE html>
         <html dir="rtl" lang="fa">
         <head>
           <meta charset="UTF-8">
@@ -145,26 +194,11 @@ export default function FormKDetails({ trainerId, onClose }: FormKDetailsProps) 
             .signature-table td { height:60px; vertical-align:bottom; }
           </style>
         </head>
-        <body>
-          ${printContents}
-          <script>window.onload=function(){window.print(); setTimeout(()=>window.close(),100);}</script>
-        </body>
+        <body>${printContents}</body>
         </html>
       `);
       printWindow.document.close();
     }
-  };
-
-  const handleChangeMainField = (field: keyof FormK, value: string) => {
-    if (!data) return;
-    setData({ ...data, [field]: value });
-  };
-
-  const handleEvaluationChange = (idx: number, field: keyof Evaluation, value: string | number | boolean) => {
-    if (!data) return;
-    const newEvaluations = [...data.evaluations];
-    newEvaluations[idx] = { ...newEvaluations[idx], [field]: value };
-    setData({ ...data, evaluations: newEvaluations });
   };
 
   if (loading) return <div className="p-4 text-center">در حال بارگذاری...</div>;
@@ -177,6 +211,7 @@ export default function FormKDetails({ trainerId, onClose }: FormKDetailsProps) 
 
   return (
     <div className="p-4">
+      {/* سربرگ */}
       <div className="mb-4 flex items-center justify-between">
         <h2 className="text-lg font-semibold">Form K - فرم ارزیابی مونوگراف</h2>
         <div className="space-x-2">
@@ -229,105 +264,139 @@ export default function FormKDetails({ trainerId, onClose }: FormKDetailsProps) 
         </div>
       </div>
 
-      <div ref={printRef} className="overflow-auto border rounded-lg max-h-[70vh] p-4 bg-white">
-        {/* مشخصات فردی */}
-        <table className="w-full border border-slate-300 mb-6 text-sm">
-          <tbody>
-            <tr>
-              <td className="font-semibold px-3 py-2 border bg-gray-50 w-1/6">نام</td>
-              <td className="px-3 py-2 border w-1/3">
-                {editing ? <input className="w-full border px-2 py-1 rounded" value={data.name} onChange={(e)=>handleChangeMainField("name",e.target.value)}/> : data.name}
-              </td>
-              <td className="font-semibold px-3 py-2 border bg-gray-50 w-1/6">تخلص</td>
-              <td className="px-3 py-2 border w-1/3">
-                {editing ? <input className="w-full border px-2 py-1 rounded" value={data.lastName} onChange={(e)=>handleChangeMainField("lastName",e.target.value)}/> : data.lastName}
-              </td>
-            </tr>
-            <tr>
-              <td className="font-semibold px-3 py-2 border bg-gray-50">ولد</td>
-              <td className="px-3 py-2 border">{editing ? <input className="w-full border px-2 py-1 rounded" value={data.parentType} onChange={(e)=>handleChangeMainField("parentType",e.target.value)}/> : data.parentType}</td>
-              <td className="font-semibold px-3 py-2 border bg-gray-50">نمبر تذکره</td>
-              <td className="px-3 py-2 border">{editing ? <input className="w-full border px-2 py-1 rounded" value={data.idNumber} onChange={(e)=>handleChangeMainField("idNumber",e.target.value)}/> : data.idNumber}</td>
-            </tr>
-            <tr>
-              <td className="font-semibold px-3 py-2 border bg-gray-50">رشته</td>
-              <td className="px-3 py-2 border">{editing ? <input className="w-full border px-2 py-1 rounded" value={data.department} onChange={(e)=>handleChangeMainField("department",e.target.value)}/> : data.department}</td>
-              <td className="font-semibold px-3 py-2 border bg-gray-50">سال تریننگ</td>
-              <td className="px-3 py-2 border">{editing ? <input className="w-full border px-2 py-1 rounded" value={data.trainingYear} onChange={(e)=>handleChangeMainField("trainingYear",e.target.value)}/> : data.trainingYear}</td>
-            </tr>
-            <tr>
-              <td className="font-semibold px-3 py-2 border bg-gray-50">سال شمول</td>
-              <td className="px-3 py-2 border">{editing ? <input className="w-full border px-2 py-1 rounded" value={data.startYear} onChange={(e)=>handleChangeMainField("startYear",e.target.value)}/> : data.startYear}</td>
-              <td className="font-semibold px-3 py-2 border bg-gray-50">تاریخ</td>
-              <td className="px-3 py-2 border">{editing ? <input className="w-full border px-2 py-1 rounded" value={data.date} onChange={(e)=>handleChangeMainField("date",e.target.value)}/> : data.date}</td>
-            </tr>
-          </tbody>
-        </table>
-
+      <div
+        ref={printRef}
+        className="overflow-auto border rounded-lg max-h-[70vh] p-4 bg-white"
+      >
         {/* جدول ارزیابی */}
         <div className="mb-6">
-          <h4 className="font-semibold mb-2 text-center">جدول ارزیابی مونوگراف</h4>
+          <h4 className="font-semibold mb-2 text-center">
+            جدول ارزیابی مونوگراف
+          </h4>
           <table className="min-w-full border border-slate-300 text-sm">
             <thead>
               <tr className="bg-gray-50">
                 <th className="p-2 border w-8">#</th>
                 <th className="p-2 border w-1/3">بخش</th>
-                <th className="p-2 border w-24">فیصدی</th>
-                <th className="p-2 border w-48">نمره داده شده</th>
+                <th className="p-2 border w-1/4">فیصدی</th>
+                <th className="p-2 border w-1/4">نمره داده شده</th>
                 <th className="p-2 border w-1/3">اسم استاد</th>
                 <th className="p-2 border w-28">امضای استاد</th>
               </tr>
             </thead>
             <tbody>
               {data.evaluations.map((evaluation, idx) => (
-                <tr key={idx} className={idx%2===0?"bg-white":"bg-gray-50"}>
-                  <td className="p-2 border text-center">{idx+1}</td>
-                  <td className="p-2 border">{editing ? <input className="w-full border px-1 py-0.5 rounded" value={evaluation.section} onChange={e=>handleEvaluationChange(idx,"section",e.target.value)}/> : evaluation.section}</td>
-                  <td className="p-2 border text-center">{editing ? <input type="number" className="w-full border px-1 py-0.5 rounded text-center" value={evaluation.percentage} onChange={e=>handleEvaluationChange(idx,"percentage",Number(e.target.value))}/> : evaluation.percentage}</td>
-                  <td className="p-2 border text-center">{editing ? <input type="number" className="w-full border px-1 py-0.5 rounded text-center" value={evaluation.score} onChange={e=>handleEvaluationChange(idx,"score",Number(e.target.value))}/> : evaluation.score}</td>
-                  <td className="p-2 border text-center">{editing ? <input className="w-full border px-1 py-0.5 rounded text-center" value={evaluation.teacherName} onChange={e=>handleEvaluationChange(idx,"teacherName",e.target.value)}/> : evaluation.teacherName}</td>
+                <tr
+                  key={idx}
+                  className={idx % 2 === 0 ? "bg-white" : "bg-gray-50"}
+                >
+                  <td className="p-2 border text-center">{idx + 1}</td>
+                  <td className="p-2 border">
+                    {editing ? (
+                      <input
+                        className="w-full border px-1 py-0.5 rounded"
+                        value={evaluation.section}
+                        onChange={(e) =>
+                          handleEvaluationChange(idx, "section", e.target.value)
+                        }
+                      />
+                    ) : (
+                      evaluation.section
+                    )}
+                  </td>
+                  <td className="p-2 border text-center">
+                    {editing ? (
+                      <input
+                        type="number"
+                        className="w-full border px-1 py-0.5 rounded text-center"
+                        value={evaluation.percentage}
+                        onChange={(e) =>
+                          handleEvaluationChange(
+                            idx,
+                            "percentage",
+                            Number(e.target.value)
+                          )
+                        }
+                      />
+                    ) : (
+                      evaluation.percentage
+                    )}
+                  </td>
+                  <td className="p-2 border text-center">
+                    {editing ? (
+                      <input
+                        type="number"
+                        className="w-full border px-1 py-0.5 rounded text-center"
+                        value={evaluation.score}
+                        onChange={(e) =>
+                          handleEvaluationChange(
+                            idx,
+                            "score",
+                            Number(e.target.value)
+                          )
+                        }
+                      />
+                    ) : (
+                      evaluation.score
+                    )}
+                  </td>
+                  <td className="p-2 border text-center">
+                    {editing ? (
+                      <input
+                        className="w-full border px-1 py-0.5 rounded text-center"
+                        value={evaluation.teacherName}
+                        onChange={(e) =>
+                          handleEvaluationChange(
+                            idx,
+                            "teacherName",
+                            e.target.value
+                          )
+                        }
+                      />
+                    ) : (
+                      evaluation.teacherName
+                    )}
+                  </td>
                   <td className="p-2 border text-center">______________</td>
                 </tr>
               ))}
 
-              {Array.from({ length: Math.max(0,6-data.evaluations.length) }).map((_,i)=>(
-                <tr key={`empty-${i}`} className="bg-white">
-                  <td className="p-2 border text-center">{data.evaluations.length+i+1}</td>
-                  <td className="p-2 border">&nbsp;</td>
-                  <td className="p-2 border">&nbsp;</td>
-                  <td className="p-2 border">&nbsp;</td>
-                  <td className="p-2 border">&nbsp;</td>
-                  <td className="p-2 border text-center">______________</td>
-                </tr>
-              ))}
+           
+              {/* 🔹 ردیف مجموع و اوسط در یک ردیف */}
+<tr className="bg-gray-100 font-semibold">
+  <td className="p-2 border text-center" colSpan={3}>
+    مجموع نمرات: {data.summary?.total || "—"}
+  </td>
+  <td className="p-2 border text-center" colSpan={3}>
+    اوسط نمرات: {data.summary?.average || "—"}
+  </td>
+</tr>
 
-              <tr className="bg-gray-100 font-semibold">
-                <td className="p-2 border text-center">7</td>
-                <td className="p-2 border text-center">مجموع نمرات</td>
-                <td className="p-2 border text-center"></td>
-                <td className="p-2 border text-center">اوسط</td>
-                <td className="p-2 border">&nbsp;</td>
-                <td className="p-2 border text-center">______________</td>
-              </tr>
+{/* 🔹 یادداشت (نوت) */}
+<tr className="bg-gray-50">
+  <td className="p-2 border text-center" colSpan={6}>
+    <strong>یادداشت:</strong>{" "}
+    {editing ? (
+      <textarea
+        className="w-full border rounded p-2 text-sm"
+        value={data.summary?.notes || ""}
+        onChange={(e) =>
+          setData({
+            ...data,
+            summary: { ...data.summary, notes: e.target.value },
+          })
+        }
+      />
+    ) : (
+      data.summary?.notes || "—"
+    )}
+    </td>
+   </tr>
+
+              
             </tbody>
           </table>
         </div>
-
-        {/* امضاها */}
-        <table className="min-w-full border border-slate-300 signature-table">
-          <tbody>
-            <tr>
-              <td className="font-semibold px-3 py-2 border text-center">استاد راهنما</td>
-              <td className="font-semibold px-3 py-2 border text-center">رئیس دیپارتمنت</td>
-              <td className="font-semibold px-3 py-2 border text-center">آمر برنامه آموزشی</td>
-            </tr>
-            <tr>
-              <td className="px-3 py-2 border text-center min-h-[50px]">{data.supervisor || "____________"}</td>
-              <td className="px-3 py-2 border text-center min-h-[50px]">{data.departmentHead || "____________"}</td>
-              <td className="px-3 py-2 border text-center min-h-[50px]">{data.programHead || "____________"}</td>
-            </tr>
-          </tbody>
-        </table>
       </div>
     </div>
   );

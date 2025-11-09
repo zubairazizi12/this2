@@ -66,9 +66,9 @@ export default function TeacherActivityForm({
       return;
     }
 
+    // ✅ trainerId را در state ذخیره کن
     setTrainerId(trainerIdProp);
 
-    // 👇 دریافت داده از دیتابیس
     const fetchTrainerInfo = async () => {
       try {
         const res = await fetch(
@@ -78,11 +78,18 @@ export default function TeacherActivityForm({
 
         if (!res.ok) throw new Error(result.message || "خطا در دریافت ترینر");
 
-        // فرض می‌کنیم دیتابیس این فیلدها را دارد:
-        // name, fatherName, trainingYear
-        setName(result.name || "");
-        setparentType(result.parentType || "");
-        setTrainingYear(result.trainingYear || "");
+        const trainer = result.trainer;
+        const progress = result.trainerProgress;
+
+        setName(trainer?.name || "");
+        setparentType(trainer?.parentType || trainer?.lastName || "");
+
+        // تعیین سال آموزش: اگر currentTrainingYear موجود است از آن استفاده شود، در غیر این صورت آخرین academicYear
+        const year =
+          progress?.currentTrainingYear ||
+          progress?.trainingHistory?.at(-1)?.academicYear ||
+          new Date().getFullYear().toString();
+        setTrainingYear(year);
       } catch (err) {
         console.error("خطا در دریافت ترینر:", err);
         alert("خطا در دریافت اطلاعات ترینر ❌");
@@ -126,21 +133,34 @@ export default function TeacherActivityForm({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    // 1️⃣ چک trainerId
     if (!trainerId) {
-      alert("ابتدا باید یک ترینر ثبت شده انتخاب شود!");
+      alert("❌ ابتدا باید یک ترینر انتخاب شود!");
       return;
     }
 
+    // 2️⃣ چک حداقل یک استاد وارد شده باشد
     const nonEmptyTeachers = teachers.filter((t) => t.trim() !== "");
     if (nonEmptyTeachers.length === 0) {
-      alert("حداقل یک نام استاد وارد کنید!");
+      alert("❌ حداقل یک نام استاد وارد کنید!");
+      return;
+    }
+
+    // 3️⃣ ولیدیشن چک باکس‌ها: حداقل یک چک باکس برای هر فعالیت
+    const invalidRows = data.filter((row) => !row.evaluators.some((v) => v));
+    if (invalidRows.length > 0) {
+      alert(
+        `❌ برای همه فعالیت‌ها حداقل یک استاد باید انتخاب شود.\nفعالیت‌های ناقص:\n${invalidRows
+          .map((r) => `${r.section} - ${r.activity}`)
+          .join("\n")}`
+      );
       return;
     }
 
     const payload = {
       trainerId,
       name,
-      parentType, // الان مقدار واقعی است
+      parentType,
       trainingYear,
       teachers: nonEmptyTeachers,
       activities: data,
@@ -156,14 +176,13 @@ export default function TeacherActivityForm({
       const result = await res.json();
 
       if (!res.ok) {
-        console.error("Server error:", result); // ← این را اضافه کن
-        throw new Error(result.message || "خطای ناشناخته");
+        throw new Error(result.message || "خطای ناشناخته سرور");
       }
 
-      alert("فرم با موفقیت ذخیره شد ✅");
+      alert("✅ فرم با موفقیت ذخیره شد");
     } catch (err: any) {
-      console.error("Error object:", err); // ← این را اضافه کن
-      alert("خطا در ذخیره داده ❌: " + err.message);
+      console.error("Error:", err);
+      alert("❌ خطا در ذخیره داده: " + err.message);
     }
   };
 

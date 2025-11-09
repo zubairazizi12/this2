@@ -12,16 +12,23 @@ export const createTeacherActivity = async (req: Request, res: Response) => {
       return res.status(400).json({ message: "تمام فیلدها الزامی‌اند" });
     }
 
+     // 🔹 جلوگیری از ثبت فرم تکراری بر اساس trainerId و trainingYear
+     const existingForm = await TeacherActivityModel.findOne({
+      trainerId: new mongoose.Types.ObjectId(trainerId),
+      trainingYear: trainingYear.toString().trim(),
+    });
+
+    if (existingForm) {
+      return res.status(400).json({
+        message:
+          "⚠ این ترینر قبلاً برای این سال فرم فعالیت استاد را ثبت کرده است. لطفاً سال آموزشی را ارتقا دهید.",
+        formId: existingForm._id,
+      });
+    }
+
     if (!mongoose.Types.ObjectId.isValid(trainerId)) {
       return res.status(400).json({ message: "TrainerId معتبر نیست" });
     }
-
-    // ✅ بررسی وجود فرم قبلی همان ترینر
-    const existingForm = await TeacherActivityModel.findOne({ trainerId });
-    if (existingForm) {
-      return res.status(400).json({ message: "این فرم برای این ترینر قبلاً ثبت شده است." });
-    }
-
     const newForm = new TeacherActivityModel({
       trainerId: new mongoose.Types.ObjectId(trainerId),
       name,
@@ -63,18 +70,29 @@ export const getSingleTeacherActivityByTrainer = async (req: Request, res: Respo
 };
 
 
-// ✅ دریافت فرم با ID خاص
+
+// ✅ دریافت فرم فعالیت استاد با ID خاص
 export const getTeacherActivityById = async (req: Request, res: Response) => {
   try {
-    const { id } = req.params;
-    const form = await TeacherActivityModel.findById(id);
-    if (!form) return res.status(404).json({ message: "فرم یافت نشد" });
+    const { formId } = req.params;
+
+    // 🧠 lean() برای بهبود سرعت و حذف متدهای Mongoose
+    const form = await TeacherActivityModel.findById(formId).lean();
+
+    if (!form) {
+      return res.status(404).json({ message: "فرم فعالیت استاد یافت نشد" });
+    }
+
     res.json(form);
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: "❌ خطا در دریافت فرم", error: err });
+    console.error("❌ خطا در دریافت فرم فعالیت استاد:", err);
+    res.status(500).json({
+      message: "خطا در دریافت فرم فعالیت استاد",
+      error: err instanceof Error ? err.message : err,
+    });
   }
 };
+
 
 // ✅ ویرایش فرم
 export const updateTeacherActivity = async (req: Request, res: Response) => {

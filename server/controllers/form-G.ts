@@ -8,6 +8,7 @@ export class EvaluationFormGController {
   static async create(req: Request, res: Response) {
     try {
       const { trainer, personalInfo, scores } = req.body;
+      const trainingYear = personalInfo?.trainingYear;
 
       if (!trainer) {
         return res.status(400).json({ message: "Trainer ID الزامی است" });
@@ -15,11 +16,31 @@ export class EvaluationFormGController {
       if (!personalInfo || !scores) {
         return res.status(400).json({ message: "اطلاعات کامل فرم الزامی است" });
       }
+      if (!trainingYear) {
+        return res.status(400).json({ message: "سال ترینینگ الزامی است" });
+      }
 
-      // محاسبه میانگین کل (averageScore)
+      // محاسبه میانگین کل
       const filledRows = scores.slice(0, 5);
-      const totalSum = filledRows.reduce((sum: number, row: any) => sum + (Number(row.total) || 0), 0);
+      const totalSum = filledRows.reduce(
+        (sum: number, row: any) => sum + (Number(row.total) || 0),
+        0
+      );
       const averageScore = totalSum / filledRows.length;
+
+      // جلوگیری از تکرار فرم برای یک ترینر در همان سال
+      const existingForm = await EvaluationFormG.findOne({
+        trainer: new mongoose.Types.ObjectId(trainer),
+        "personalInfo.trainingYear": trainingYear.toString().trim(),
+      });
+
+      if (existingForm) {
+        return res.status(400).json({
+          message:
+            "⚠️ این ترینر قبلاً برای این سال فرم مونوگراف را ثبت کرده است. لطفاً ترینی را ارتقا دهید.",
+          formId: existingForm._id,
+        });
+      }
 
       const form = new EvaluationFormG({
         trainer: new mongoose.Types.ObjectId(trainer),
@@ -40,7 +61,9 @@ export class EvaluationFormGController {
   static async getAll(req: Request, res: Response) {
     try {
       const { trainerId } = req.query;
-      const filter = trainerId ? { trainer: new mongoose.Types.ObjectId(trainerId as string) } : {};
+      const filter = trainerId
+        ? { trainer: new mongoose.Types.ObjectId(trainerId as string) }
+        : {};
 
       const forms = await EvaluationFormG.find(filter)
         .populate("trainer")
@@ -56,7 +79,9 @@ export class EvaluationFormGController {
   // 🔹 دریافت فرم بر اساس ID
   static async getById(req: Request, res: Response) {
     try {
-      const form = await EvaluationFormG.findById(req.params.id).populate("trainer");
+      const form = await EvaluationFormG.findById(req.params.id).populate(
+        "trainer"
+      );
       if (!form) return res.status(404).json({ message: "فرم پیدا نشد" });
       res.json(form);
     } catch (err) {
@@ -68,7 +93,11 @@ export class EvaluationFormGController {
   // 🔹 بروزرسانی فرم بر اساس ID
   static async update(req: Request, res: Response) {
     try {
-      const updated = await EvaluationFormG.findByIdAndUpdate(req.params.id, req.body, { new: true });
+      const updated = await EvaluationFormG.findByIdAndUpdate(
+        req.params.id,
+        req.body,
+        { new: true }
+      );
       if (!updated) return res.status(404).json({ message: "فرم پیدا نشد" });
       res.json({ message: "✅ فرم بروزرسانی شد", updated });
     } catch (err) {

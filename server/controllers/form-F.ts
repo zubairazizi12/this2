@@ -1,85 +1,116 @@
-
+import { ChecklistModel } from './../models/form-F';
 import { Request, Response } from "express";
-import Checklist from "../models/form-F";
+import { IChecklist } from "../models/form-F";
+import mongoose from 'mongoose';
 
-// 🔹 Create new Form-F (Checklist)
+
+// ایجاد چک‌لیست جدید
 export const createChecklist = async (req: Request, res: Response) => {
   try {
-    const { trainerId, name, parentType, trainingYear, sections } = req.body;
+    const data: IChecklist = req.body;
 
-    if (!trainerId) 
-      return res.status(400).json({ message: "TrainerId الزامی است" });
-    if (!name || !parentType || !trainingYear || !sections) {
-      return res.status(400).json({ message: "اطلاعات ناقص است" });
+    if (!data.trainerId || !data.name || !data.trainingYear) {
+      return res.status(400).json({ message: "اطلاعات اجباری ناقص است!" });
     }
 
-    const checklist = new Checklist({
-      trainerId,
-      name,
-      parentType,
-      trainingYear,
-      sections,
+    
+
+     // 🔹 جلوگیری از ثبت فرم تکراری بر اساس trainerId و trainingYear
+     const existingForm = await ChecklistModel.findOne({
+      trainerId: new mongoose.Types.ObjectId(data.trainerId),
+      trainingYear: data.trainingYear.toString().trim(),
     });
 
-    const savedChecklist = await checklist.save();
-    res.status(201).json(savedChecklist);
+    if (existingForm) {
+      return res.status(400).json({
+        message:
+          "⚠ این ترینر قبلاً برای این سال چک‌لیست ثبت کرده است. لطفاً سال آموزشی را ارتقا دهید.",
+        formId: existingForm._id,
+      });
+    }
+
+    const checklist = new ChecklistModel(data);
+    await checklist.save();
+
+
+    return res.status(201).json({ message: "چک‌لیست با موفقیت ذخیره شد!", checklist });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: "خطا در ایجاد فرم" });
+    console.error("Error creating checklist:", err);
+    return res.status(500).json({ message: "خطا در ذخیره چک‌لیست" });
   }
 };
 
-// 🔹 Get all Form-Fs for a specific trainer
+// دریافت تمام چک‌لیست‌ها
 export const getChecklists = async (req: Request, res: Response) => {
   try {
+    const checklists = await ChecklistModel.find();
+    return res.status(200).json(checklists);
+  } catch (err) {
+    console.error("Error fetching checklists:", err);
+    return res.status(500).json({ message: "خطا در دریافت چک‌لیست‌ها" });
+  }
+};
+
+//////
+export const getChecklistFormById = async (req: Request, res: Response) => {
+  try {
+    const { formId } = req.params;
+
+    const form = await ChecklistModel.findById(formId).lean();
+
+    if (!form) {
+      return res.status(404).json({ message: "فرم F (Checklist) یافت نشد" });
+    }
+
+    res.json(form);
+  } catch (err) {
+    console.error("❌ Error fetching Checklist:", err);
+    res.status(500).json({ message: "خطا در دریافت فرم Checklist" });
+  }
+};
+
+
+
+export const getChecklistByTrainer = async (req: Request, res: Response) => {
+  try {
     const { trainerId } = req.params;
+    const { year } = req.query; // 👈 سال را از کوئری بگیر
+    const query: any = { trainerId };
+    if (year) query.trainingYear = year; // 👈 اضافه شد
 
-    if (!trainerId) return res.status(400).json({ message: "TrainerId الزامی است" });
-
-    const checklists = await Checklist.find({ trainerId }).sort({ createdAt: -1 });
-    res.json(checklists);
+    const checklist = await ChecklistModel.findOne(query);
+    if (!checklist) return res.status(404).json({ message: "چک‌لیست یافت نشد" });
+    return res.status(200).json(checklist);
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: "خطا در دریافت فرم‌ها" });
+    console.error("Error fetching checklist:", err);
+    return res.status(500).json({ message: "خطا در دریافت چک‌لیست" });
   }
 };
 
-// 🔹 Get a single Form-F by ID
-export const getChecklistById = async (req: Request, res: Response) => {
+// ✅ ویرایش چک‌لیست بر اساس trainerId
+export const updateChecklistByTrainer = async (req: Request, res: Response) => {
   try {
-    const { id } = req.params;
-    const checklist = await Checklist.findById(id);
-    if (!checklist) return res.status(404).json({ message: "فرم یافت نشد" });
-    res.json(checklist);
+    const { trainerId } = req.params;
+    const updatedData: Partial<IChecklist> = req.body;
+
+    // پیدا کردن چک‌لیست
+    const checklist = await ChecklistModel.findOne({ trainerId });
+    if (!checklist) {
+      return res.status(404).json({ message: "چک‌لیست برای این ترینر یافت نشد!" });
+    }
+
+    // به‌روزرسانی مقادیر
+    Object.assign(checklist, updatedData);
+
+    // ذخیره تغییرات
+    await checklist.save();
+
+    return res.status(200).json({
+      message: "✅ چک‌لیست با موفقیت به‌روزرسانی شد!",
+      checklist,
+    });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: "خطا در دریافت فرم" });
+    console.error("Error updating checklist:", err);
+    return res.status(500).json({ message: "خطا در به‌روزرسانی چک‌لیست" });
   }
 };
-
-// 🔹 Update Form-F by ID
-export const updateChecklist = async (req: Request, res: Response) => {
-  try {
-    const { id } = req.params;
-    const updatedChecklist = await Checklist.findByIdAndUpdate(id, req.body, { new: true });
-    if (!updatedChecklist) return res.status(404).json({ message: "فرم یافت نشد" });
-    res.json(updatedChecklist);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: "خطا در بروزرسانی فرم" });
-  }
-};
-
-// 🔹 Delete Form-F by ID
-export const deleteChecklist = async (req: Request, res: Response) => {
-  try {
-    const { id } = req.params;
-    const deletedChecklist = await Checklist.findByIdAndDelete(id);
-    if (!deletedChecklist) return res.status(404).json({ message: "فرم یافت نشد" });
-    res.json({ message: "فرم با موفقیت حذف شد" });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: "خطا در حذف فرم" });
-  }
-};
-

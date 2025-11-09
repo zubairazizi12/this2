@@ -24,37 +24,37 @@ export default function EvaluationFormE({
   );
 
   ////////////////////////////////////
-   useEffect(() => {
-      if (!trainerIdProp) {
-        alert("هیچ ترینر فعالی یافت نشد!");
-        return;
+  useEffect(() => {
+    if (!trainerIdProp) {
+      alert("هیچ ترینر فعالی یافت نشد!");
+      return;
+    }
+
+    setTrainerId(trainerIdProp);
+
+    // 👇 دریافت داده از دیتابیس
+    const fetchTrainerInfo = async () => {
+      try {
+        const res = await fetch(
+          `http://localhost:5000/api/trainers/${trainerIdProp}`
+        );
+        const result = await res.json();
+
+        if (!res.ok) throw new Error(result.message || "خطا در دریافت ترینر");
+
+        // فرض می‌کنیم دیتابیس این فیلدها را دارد:
+        // name, fatherName, trainingYear
+        setName(result.trainer?.name || "");
+        setparentType(result.trainer?.parentType || "");
+        setTrainingYear(result.trainerProgress?.currentTrainingYear || "");
+      } catch (err) {
+        console.error("خطا در دریافت ترینر:", err);
+        alert("خطا در دریافت اطلاعات ترینر ❌");
       }
-  
-      setTrainerId(trainerIdProp);
-  
-      // 👇 دریافت داده از دیتابیس
-      const fetchTrainerInfo = async () => {
-        try {
-          const res = await fetch(
-            `http://localhost:5000/api/trainers/${trainerIdProp}`
-          );
-          const result = await res.json();
-  
-          if (!res.ok) throw new Error(result.message || "خطا در دریافت ترینر");
-  
-          // فرض می‌کنیم دیتابیس این فیلدها را دارد:
-          // name, fatherName, trainingYear
-          setName(result.name || "");
-          setparentType(result.parentType || "");
-          setTrainingYear(result.trainingYear || "");
-        } catch (err) {
-          console.error("خطا در دریافت ترینر:", err);
-          alert("خطا در دریافت اطلاعات ترینر ❌");
-        }
-      };
-  
-      fetchTrainerInfo();
-    }, [trainerIdProp]);
+    };
+
+    fetchTrainerInfo();
+  }, [trainerIdProp]);
   //////////////////////////////////////
   const inputClass = "border rounded px-2 py-2 w-full text-center";
 

@@ -1,7 +1,7 @@
 import mongoose, { Schema, Document } from "mongoose";
 
 export interface ITrainer extends Document {
-  id: string;
+  id: string; // کد خودی
   name: string;
   lastName: string;
   parentType: string;
@@ -58,8 +58,11 @@ const trainerSchema = new Schema<ITrainer>(
     },
     photo: { type: String, trim: true }, // مسیر عکس ذخیره می‌شود
   },
-  { timestamps: true }
-);
+    {
+    timestamps: true,
+    versionKey: false,
+  }
+)
 
 export default mongoose.models.Trainer ||
   mongoose.model<ITrainer>("Trainer", trainerSchema);

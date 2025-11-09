@@ -21,8 +21,21 @@ export class ConferenceEvaluationController {
           .status(400)
           .json({ message: "Trainer ID خالی است و فرم ذخیره نمی‌شود." });
       }
+    
+      // 🔹 جلوگیری از ثبت فرم تکراری بر اساس سال ترینینگ برای همان ترینر
+      const existingYearForm = await ConferenceEvaluation.findOne({
+        trainer: new mongoose.Types.ObjectId(trainer),
+        trainingYear: trainingYear.toString().trim(),
+      });
 
-       
+      if (existingYearForm) {
+        return res.status(400).json({
+          message:
+            "⚠️ این ترینی قبلاً برای این سال فرم مونوگراف را ثبت کرده است. لطفاً ترینی را ارتقا دهید.",
+          formId: existingYearForm._id,
+        });
+      }
+
 
       const newEvaluation = new ConferenceEvaluation({
         trainer: new mongoose.Types.ObjectId(trainer),

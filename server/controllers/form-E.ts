@@ -22,22 +22,17 @@ export class EvaluationFormEController {
         return res.status(400).json({ message: "Trainer ID الزامی است" });
       }
 
-      // 🔹 بررسی وجود فرم قبلی برای همین Trainer و سال آموزشی
-      // ✅ جلوگیری از ثبت فرم تکراری بر اساس چند فیلد
-      const existingForm = await EvaluationFormE.findOne({
+      // 🔹 جلوگیری از ثبت فرم تکراری بر اساس سال ترینینگ برای همان ترینر
+      const existingYearForm = await EvaluationFormE.findOne({
         trainer: new mongoose.Types.ObjectId(trainer),
-        Name: Name.trim(),
-        parentType: parentType.trim(),
         trainingYear: trainingYear.toString().trim(),
-        incidentTitle: incidentTitle.trim(),
-        averageScore: Number(averageScore),
       });
 
-      if (existingForm) {
+      if (existingYearForm) {
         return res.status(400).json({
           message:
-            "⚠️ فرم با همین مشخصات قبلاً ثبت شده و امکان ثبت مجدد وجود ندارد.",
-          formId: existingForm._id,
+            "⚠️ این ترینی قبلاً برای این سال فرم مونوگراف را ثبت کرده است. لطفاً ترینی را ارتقا دهید.",
+          formId: existingYearForm._id,
         });
       }
       const form = new EvaluationFormE({

@@ -165,32 +165,29 @@ export default function Teachers() {
       <Header />
       <Sidebar />
       <div className="mr-0 md:mr-64 pt-16 md:pt-20 p-4 md:p-6 space-y-4 md:space-y-6">
-        <div className="mb-4 md:mb-6">
-          {/* هدر */}
-          <h1
-            className="text-xl md:text-3xl font-bold tracking-tight mb-4"
-            data-testid="heading-teachers"
-          >
-            مدیریت استادان
-          </h1>
+       <div className="flex items-center justify-between mb-4 md:mb-6">
+  <h1
+    className="text-xl md:text-3xl font-bold tracking-tight"
+    data-testid="heading-teachers"
+  >
+    مدیریت استادان
+  </h1>
 
-          {/* دکمه پایین هدر */}
-          <div className="flex justify-end">
-            {user?.role === "admin" && (
-              <Button
-                onClick={() => {
-                  setEditingTeacher(null);
-                  setIsAddDialogOpen(true);
-                }}
-                data-testid="button-add-teacher"
-                className="ml-4"
-              >
-                <Plus className="h-4 w-4 mr-2" />
-                افزودن استاد جدید
-              </Button>
-            )}
-          </div>
-        </div>
+  {user?.role === "admin" && (
+    <Button
+      onClick={() => {
+        setEditingTeacher(null);
+        setIsAddDialogOpen(true);
+      }}
+      data-testid="button-add-teacher"
+      className="bg-green-600 hover:bg-green-700 text-white font-semibold px-4 md:px-6 py-2 rounded-xl shadow-md transition-all"
+    >
+      <Plus className="h-4 w-4 mr-2" />
+      افزودن استاد جدید
+    </Button>
+  )}
+</div>
+
 
         <Card>
           <CardHeader>

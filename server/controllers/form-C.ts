@@ -63,24 +63,18 @@ export class MonographController {
       if (!mongoose.Types.ObjectId.isValid(trainer)) {
         return res.status(400).json({ message: "شناسه Trainer نامعتبر است." });
       }
-
-      // 🔹 جلوگیری از ثبت فرم تکراری (بر اساس چندین مشخصه)
-      const existingForm = await MonographEvaluationForm.findOne({
+    
+      // 🔹 جلوگیری از ثبت فرم تکراری بر اساس سال ترینینگ برای همان ترینر
+      const existingYearForm = await MonographEvaluationForm.findOne({
         trainer: new mongoose.Types.ObjectId(trainer),
-        name: name.trim(),
-        lastName: lastName.trim(),
-        parentType: parentType.trim(),
-        idNumber: idNumber.trim(),
-        department: department.trim(),
         trainingYear: trainingYear.toString().trim(),
-        startYear: startYear.toString().trim(),
       });
 
-      if (existingForm) {
+      if (existingYearForm) {
         return res.status(400).json({
           message:
-            "⚠️ فرم با همین مشخصات قبلاً ثبت شده و امکان ثبت مجدد وجود ندارد.",
-          formId: existingForm._id,
+            "⚠️ این ترینی قبلاً برای این سال فرم مونوگراف را ثبت کرده است. لطفاً ترینی را ارتقا دهید.",
+          formId: existingYearForm._id,
         });
       }
 

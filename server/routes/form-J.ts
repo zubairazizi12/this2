@@ -18,7 +18,7 @@ router.post("/", createTeacherActivity);
 router.get("/:trainerId", getSingleTeacherActivityByTrainer);
 
 // ✅ دریافت فرم با ID خاص
-router.get("/:id", getTeacherActivityById);
+router.get("/form/:formId", getTeacherActivityById);
 
 // ✅ بروزرسانی فرم با ID
 router.put("/:id", updateTeacherActivity);

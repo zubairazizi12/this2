@@ -46,12 +46,12 @@ export default function MonographEvaluationFormC({
 
         // فرض می‌کنیم دیتابیس این فیلدها را دارد:
         // name, fatherName, trainingYear
-        setName(result.name || "");
-        setparentType(result.parentType || "");
-        setTrainingYear(result.trainingYear || "");
-        setIdNumber(result.idNumber||"");
-        setLastName(result.lastName||"");
-        setDepartment(result.department||"");
+        setName(result.trainer?.name || "");
+        setparentType(result.trainer?.parentType || "");
+        setTrainingYear(result.trainerProgress?.currentTrainingYear || "");
+        setIdNumber(result.trainer?.idNumber || "");
+        setLastName(result.trainer?.lastName || "");
+        setDepartment(result.trainer?.department || "");
       } catch (err) {
         console.error("خطا در دریافت ترینر:", err);
         alert("خطا در دریافت اطلاعات ترینر ❌");
@@ -60,7 +60,7 @@ export default function MonographEvaluationFormC({
 
     fetchTrainerInfo();
   }, [trainerIdProp]);
- 
+
   // بخش‌های ثابت فرم + سه بخش جدید
   const sections = [
     "نمره کنفرانسهای طول سال",
@@ -103,7 +103,7 @@ export default function MonographEvaluationFormC({
     // 🔹 بررسی فیلدهای اطلاعات شخصی
     const personalFields = {
       name,
-      lastName,  
+      lastName,
       parentType,
       idNumber,
       department,

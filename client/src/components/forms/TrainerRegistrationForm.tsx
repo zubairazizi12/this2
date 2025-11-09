@@ -3,6 +3,12 @@ import { useForm } from "react-hook-form";
 import { X } from "lucide-react";
 import { useTrainer } from "@/context/TrainerContext";
 
+import moment from "moment";
+import DatePicker, { DateObject } from "react-multi-date-picker";
+import persian from "react-date-object/calendars/persian";
+import gregorian from "react-date-object/calendars/gregorian";
+import persian_fa from "react-date-object/locales/persian_fa";
+
 type FormValues = {
   id: string;
   name: string;
@@ -16,6 +22,7 @@ type FormValues = {
   hospital: string;
   joiningDate: string;
   trainingYear: string;
+  academicYear: string; // فیلد جدید
   supervisorName: string;
   birthDate: string;
   idNumber: string;
@@ -40,6 +47,8 @@ export default function TrainerRegistrationForm({
     handleSubmit,
     reset,
     formState: { errors },
+    setValue,
+    watch,
   } = useForm<FormValues>({
     defaultValues: {
       id: "",
@@ -54,6 +63,7 @@ export default function TrainerRegistrationForm({
       hospital: "",
       joiningDate: "",
       trainingYear: "",
+      academicYear: "",
       supervisorName: "",
       birthDate: "",
       idNumber: "",
@@ -70,13 +80,33 @@ export default function TrainerRegistrationForm({
   const { setTrainerId } = useTrainer();
 
   const onSubmit = async (data: FormValues) => {
+    function toEnglishNumber(str: string) {
+      return str.replace(/[۰-۹]/g, (d) => "۰۱۲۳۴۵۶۷۸۹".indexOf(d).toString());
+    }
+
     try {
       const formData = new FormData();
+
       Object.entries(data).forEach(([key, value]) => {
-        if (key === "photo" && value && value.length > 0) {
-          formData.append("photo", value[0]);
+        let finalValue: string | File = value as string;
+
+        // 👇 تبدیل اعداد فارسی به انگلیسی
+        if (typeof value === "string") {
+          finalValue = toEnglishNumber(value);
+        }
+
+        // 👇 اگر تاریخ است، به ISO تبدیل کن
+        if (key === "joiningDate" || key === "birthDate") {
+          if (finalValue) {
+            const date = new Date(finalValue);
+            finalValue = date.toISOString(); // Mongoose این را می‌فهمد
+          }
+        }
+
+        if (key === "photo" && value && (value as FileList).length > 0) {
+          formData.append("photo", (value as FileList)[0]);
         } else {
-          formData.append(key, value as string);
+          formData.append(key, finalValue as string);
         }
       });
 
@@ -94,7 +124,8 @@ export default function TrainerRegistrationForm({
       const savedTrainer = await response.json();
       console.log("Saved trainer:", savedTrainer);
 
-      const trainerId = savedTrainer?._id ?? savedTrainer?.id;
+      const trainerId = savedTrainer?.trainer?._id ?? savedTrainer?.trainer?.id;
+
       if (!trainerId) {
         alert("API آیدی برنگرداند!");
         return;
@@ -284,19 +315,51 @@ export default function TrainerRegistrationForm({
 
             <label className="flex flex-col">
               <span className="text-sm">تاریخ شمولیت به پروگرام تریننگ</span>
-              <input
-                type="date"
-                {...register("joiningDate")}
-                className="mt-1 p-2 border rounded-md"
+              <DatePicker
+                calendar={persian}
+                locale={persian_fa}
+                format="YYYY/MM/DD"
+                inputClass="mt-1 p-2 border rounded-md w-full"
+                onChange={(date: DateObject | DateObject[] | null) => {
+                  if (date instanceof DateObject) {
+                    // 👇 تبدیل شمسی به میلادی (برای ذخیره در دیتابیس)
+                    const gregorianDate = date.convert(gregorian);
+                    setValue("joiningDate", gregorianDate.format("YYYY-MM-DD"));
+                  } else {
+                    setValue("joiningDate", "");
+                  }
+                }}
               />
             </label>
 
             <label className="flex flex-col">
               <span className="text-sm">سال تریننگ فعلی (صنف)</span>
-              <input
+              <select
                 {...register("trainingYear")}
                 className="mt-1 p-2 border rounded-md"
+                defaultValue=""
+              >
+                <option value="" disabled>
+                  انتخاب کنید
+                </option>
+                <option value="سال اول">اول</option>
+              </select>
+            </label>
+
+            <label className="flex flex-col">
+              <span className="text-sm">سال تعلیمی</span>
+              <input
+                {...register("academicYear", {
+                  required: "سال تعلیمی لازم است",
+                })}
+                placeholder="مثلاً 2025-2026"
+                className="mt-1 p-2 border rounded-md focus:outline-none focus:ring-2"
               />
+              {errors.academicYear && (
+                <span className="text-red-600 text-sm">
+                  {errors.academicYear.message}
+                </span>
+              )}
             </label>
 
             <label className="flex flex-col">
@@ -309,10 +372,20 @@ export default function TrainerRegistrationForm({
 
             <label className="flex flex-col">
               <span className="text-sm">تاریخ تولد</span>
-              <input
-                type="date"
-                {...register("birthDate")}
-                className="mt-1 p-2 border rounded-md"
+              <DatePicker
+                calendar={persian}
+                locale={persian_fa}
+                format="YYYY/MM/DD"
+                inputClass="mt-1 p-2 border rounded-md w-full"
+                onChange={(date: DateObject | DateObject[] | null) => {
+                  if (date instanceof DateObject) {
+                    // 👇 تبدیل شمسی به میلادی (برای ذخیره در دیتابیس)
+                    const gregorianDate = date.convert(gregorian);
+                    setValue("birthDate", gregorianDate.format("YYYY-MM-DD"));
+                  } else {
+                    setValue("birthDate", "");
+                  }
+                }}
               />
             </label>
 

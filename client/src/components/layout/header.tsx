@@ -33,7 +33,7 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
           className="h-8 w-8 md:h-10 md:w-10"
         />
         <h1 className="text-sm md:text-xl font-bold tracking-wide truncate">
-          سیستم مدیریتی ترینری شفاخانه چشم نور
+          سیستم مدیریتی ترینی شفاخانه چشم نور
         </h1>
       </div>
 

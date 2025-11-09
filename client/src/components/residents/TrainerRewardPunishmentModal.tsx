@@ -92,7 +92,7 @@ export default function TrainerRewardPunishmentModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="max-w-2xl w-full max-h-[80vh] overflow-y-auto p-4">
         <DialogHeader>
           <DialogTitle className="text-xl font-bold">
             ثبت مجازات/مکافات برای: {trainerName}
@@ -100,11 +100,15 @@ export default function TrainerRewardPunishmentModal({
         </DialogHeader>
 
         <div className="space-y-4">
+          {/* نوع */}
           <div>
             <Label htmlFor="type" className="mb-2 block">
               نوع
             </Label>
-            <Select value={type} onValueChange={(value: "reward" | "punishment") => setType(value)}>
+            <Select
+              value={type}
+              onValueChange={(value: "reward" | "punishment") => setType(value)}
+            >
               <SelectTrigger>
                 <SelectValue placeholder="نوع را انتخاب کنید" />
               </SelectTrigger>
@@ -115,6 +119,7 @@ export default function TrainerRewardPunishmentModal({
             </Select>
           </div>
 
+          {/* توضیحات */}
           <div>
             <Label htmlFor="description" className="mb-2 block">
               توضیحات
@@ -128,6 +133,7 @@ export default function TrainerRewardPunishmentModal({
             />
           </div>
 
+          {/* آپلود فایل */}
           <div>
             <Label htmlFor="files" className="mb-2 block">
               آپلود فایل‌ها (حداکثر 10 فایل)
@@ -154,11 +160,10 @@ export default function TrainerRewardPunishmentModal({
               </label>
             </div>
 
+            {/* لیست فایل‌ها با اسکرول */}
             {selectedFiles.length > 0 && (
-              <div className="mt-3 space-y-2">
-                <p className="text-sm font-semibold text-slate-600">
-                  فایل‌های انتخاب شده:
-                </p>
+              <div className="mt-3 space-y-2 max-h-40 overflow-y-auto border rounded p-2 bg-gray-50">
+                <p className="text-sm font-semibold text-slate-600">فایل‌های انتخاب شده:</p>
                 {selectedFiles.map((file, index) => (
                   <div
                     key={index}

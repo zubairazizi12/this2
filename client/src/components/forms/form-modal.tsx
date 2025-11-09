@@ -30,6 +30,7 @@ import MonographEvaluationFormC from "@/components/forms/form-c";
 import TeacherActivityForm from "@/components/forms/formJ";
 import ChecklistForm from "@/components/forms/formF";
 import RotationForm from "@/components/forms/formI";
+import RotationFormR from "@/components/forms/formR";
 interface FormModalProps {
   form: Form;
   onClose: () => void;
@@ -46,6 +47,7 @@ const FORM_TITLES: Record<string, string> = {
   C: "Case Presentation Evaluation",
   H: "Hands-on Procedure Assessment",
   K: "Final Competency Evaluation",
+  R: "Rotation Feedback",
 };
 
 export default function FormModal({
@@ -74,6 +76,8 @@ export default function FormModal({
         return <ChecklistForm trainerIdProp={trainerId} />;
       case "I":
         return <RotationForm trainerIdProp={trainerId} />;
+      case "R":
+        return <RotationFormR trainerIdProp={trainerId} />;
       case "H":
         return <EvaluationFormHStyled trainerIdProp={trainerId} />;
       case "E":
@@ -183,7 +187,7 @@ export default function FormModal({
 
   return (
     <Dialog open={true} onOpenChange={onClose}>
-      <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
+      <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
             Form {form.formType} - {formTitle}

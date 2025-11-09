@@ -53,7 +53,7 @@ export default function TeacherTable({
       <table className="min-w-full border-collapse text-sm">
         <thead className="bg-slate-100 text-slate-700">
           <tr>
-            <th className="px-4 py-3 text-right">عکس</th>
+            {/* <th className="px-4 py-3 text-right">عکس</th> */}
             <th className="px-4 py-3 text-right">نام مکمل</th>
             <th className="px-4 py-3 text-right">بست</th>
             <th className="px-4 py-3 text-right">رتبه علمی</th>
@@ -70,8 +70,8 @@ export default function TeacherTable({
                 index % 2 === 0 ? "bg-white" : "bg-slate-50"
               } hover:bg-slate-100 transition`}
             >
-              <td className="px-4 py-3">
-                <Avatar className="h-10 w-10">
+              {/* <td className="px-4 py-3"> */}
+                {/* <Avatar className="h-10 w-10">
                   <AvatarImage
                     src={teacher.profileImageUrl || ""}
                     alt={teacher.name}
@@ -79,8 +79,8 @@ export default function TeacherTable({
                   <AvatarFallback className="bg-hospital-green-100 text-hospital-green-600">
                     {teacher.name.charAt(0)}
                   </AvatarFallback>
-                </Avatar>
-              </td>
+                </Avatar> */}
+              {/* </td> */}
 
               <td className="px-4 py-3 font-medium text-slate-900">
                 {teacher.name} {teacher.lostname}

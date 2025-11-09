@@ -66,8 +66,8 @@ export default function TrainerDetails({
   });
 
   if (isLoading) return <div>در حال بارگذاری...</div>;
-  if (error) return <div>خطا در بارگذاری ترینر</div>;
-  if (!trainer) return <div>ترینر پیدا نشد.</div>;
+  if (error) return <div>خطا در بارگذاری ترینی </div>;
+  if (!trainer) return <div>ترینی پیدا نشد.</div>;
 
   // دیباگ دیتا
   console.log("Trainer data:", trainer);
@@ -90,7 +90,7 @@ export default function TrainerDetails({
         {/* Header */}
         <DialogHeader>
           <DialogTitle>
-            جزییات ترینر: {trainer.name} {trainer.lastName}
+          جزییات ترینی: {trainer.name} {trainer.lastName}
           </DialogTitle>
         </DialogHeader>
 

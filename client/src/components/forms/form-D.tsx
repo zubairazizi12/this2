@@ -14,7 +14,7 @@ interface EvaluationFormDProps {
 export default function EvaluationFormD({
   trainerIdProp,
 }: EvaluationFormDProps) {
-const [trainerId, setTrainerId] = useState<string | null>(null);
+  const [trainerId, setTrainerId] = useState<string | null>(null);
   // 🧾 state‌های فرم
   const [year, setYear] = useState("");
   const [name, setName] = useState("");
@@ -41,8 +41,8 @@ const [trainerId, setTrainerId] = useState<string | null>(null);
       prev.map((row, i) => (i === index ? { ...row, [field]: value } : row))
     );
   };
-///////////////////////////////////
- useEffect(() => {
+  ///////////////////////////////////
+  useEffect(() => {
     if (!trainerIdProp) {
       alert("هیچ ترینر فعالی یافت نشد!");
       return;
@@ -62,10 +62,10 @@ const [trainerId, setTrainerId] = useState<string | null>(null);
 
         // فرض می‌کنیم دیتابیس این فیلدها را دارد:
         // name, fatherName, trainingYear
-        setName(result.name || "");
-        setparentType(result.parentType || "");
-        setTrainingYear(result.trainingYear || "");
-        setDepartment(result.department||"");
+        setName(result.trainer?.name || "");
+        setparentType(result.trainer?.parentType || "");
+        setTrainingYear(result.trainerProgress?.currentTrainingYear || "");
+        setDepartment(result.trainer?.department || "");
       } catch (err) {
         console.error("خطا در دریافت ترینر:", err);
         alert("خطا در دریافت اطلاعات ترینر ❌");
@@ -74,7 +74,7 @@ const [trainerId, setTrainerId] = useState<string | null>(null);
 
     fetchTrainerInfo();
   }, [trainerIdProp]);
-///////////////////////////////
+  ///////////////////////////////
   // 💾 ارسال داده به سرور
   // 💾 ارسال داده به سرور با ولیدیشن کامل
   const handleSubmit = async () => {

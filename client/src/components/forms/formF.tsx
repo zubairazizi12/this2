@@ -11,7 +11,7 @@ interface Section {
   activities: Activity[];
 }
 
-interface checklistsProps {
+interface ChecklistProps {
   trainerIdProp?: string;
 }
 
@@ -29,11 +29,7 @@ const sections: Section[] = [
     activities: [
       { id: "cc", title: "شهرت مریض", percent: 2 },
       { id: "pi", title: "معاینه فزیکی", percent: 2 },
-      {
-        id: "postHistory",
-        title: "تجویز معاینات لابراتواری روتین",
-        percent: 2,
-      },
+      { id: "labTests", title: "تجویز معاینات لابراتواری روتین", percent: 2 },
       { id: "diagnosis", title: "تجویز معاینات وصفی و ضمیموی", percent: 3 },
     ],
   },
@@ -83,77 +79,123 @@ const sections: Section[] = [
   },
 ];
 
+const monthNames = [
+  "حمل",
+  "ثور",
+  "جوزا",
+  "سرطان",
+  "اسد",
+  "سنبله",
+  "میزان",
+  "عقرب",
+  "قوس",
+  "جدی",
+  "دلو",
+  "حوت",
+];
+
 const months = Array.from({ length: 12 }, (_, i) => i + 1);
 
-const ChecklistForm: React.FC<checklistsProps> = ({ trainerIdProp }) => {
+const ChecklistForm: React.FC<ChecklistProps> = ({ trainerIdProp }) => {
   const [trainerId, setTrainerId] = useState<string | null>(null);
   const [name, setName] = useState("");
   const [parentType, setParentType] = useState("");
   const [trainingYear, setTrainingYear] = useState("");
-  const [scores, setScores] = useState<Record<string, Record<number, number>>>(
+  const [year, setYear] = useState("");
+  const [checks, setChecks] = useState<Record<string, Record<number, boolean>>>(
     {}
   );
+  const [notes, setNotes] = useState<Record<string, string>>({});
 
   useEffect(() => {
-    if (trainerIdProp) setTrainerId(trainerIdProp);
-    else alert("هیچ ترینر فعالی یافت نشد!");
+    if (trainerIdProp) {
+      setTrainerId(trainerIdProp);
+      fetchTrainerInfo(trainerIdProp);
+    } else {
+      alert("هیچ ترینر فعالی یافت نشد!");
+    }
   }, [trainerIdProp]);
 
-  // بارگذاری اطلاعات دانشجو از سرور
-  useEffect(() => {
-    if (!trainerId) return;
-
-    const fetchStudentData = async () => {
-      try {
-        const res = await fetch(
-          `http://localhost:5000/api/trainers/${trainerIdProp}`
-        );
-        if (!res.ok) throw new Error("Failed to fetch student data");
-        const data = await res.json();
-        setName(data.name || "");
-        setParentType(data.parentType || "");
-        setTrainingYear(data.trainingYear || "");
-      } catch (err) {
-        console.error(err);
-        alert("❌ خطا در بارگذاری اطلاعات دانشجو");
-      }
-    };
-
-    fetchStudentData();
-  }, [trainerId]);
-
-  const handleScoreChange = (
-    activityId: string,
-    month: number,
-    value: number
-  ) => {
-    setScores((prev) => ({
+  const handleCheckChange = (activityId: string, month: number) => {
+    setChecks((prev) => ({
       ...prev,
-      [activityId]: { ...prev[activityId], [month]: value },
+      [activityId]: {
+        ...prev[activityId],
+        [month]: !prev[activityId]?.[month],
+      },
     }));
   };
 
-  const calculateTotal = (activity: Activity) =>
-    Object.values(scores[activity.id] || {}).reduce(
-      (sum, v) => sum + (v || 0),
-      0
-    );
+  const handleNoteChange = (activityId: string, value: string) => {
+    setNotes((prev) => ({ ...prev, [activityId]: value }));
+  };
 
-  const calculateSectionTotal = (section: Section) =>
-    section.activities.reduce((sum, act) => sum + calculateTotal(act), 0);
+  const toggleMonthColumn = (monthIndex: number) => {
+    setChecks((prev) => {
+      const newChecks = { ...prev };
+      let allChecked = true;
 
-  const calculateOverallTotal = () =>
-    sections.reduce((sum, sec) => sum + calculateSectionTotal(sec), 0);
+      sections.forEach((section) => {
+        section.activities.forEach((act) => {
+          if (!newChecks[act.id]?.[monthIndex]) allChecked = false;
+        });
+      });
+
+      sections.forEach((section) => {
+        section.activities.forEach((act) => {
+          if (!newChecks[act.id]) newChecks[act.id] = {};
+          newChecks[act.id][monthIndex] = !allChecked;
+        });
+      });
+
+      return newChecks;
+    });
+  };
+
+  const totalPercent = sections.reduce(
+    (sum, section) =>
+      sum + section.activities.reduce((acc, act) => acc + act.percent, 0),
+    0
+  );
+  // ✅ تابع دریافت اطلاعات ترینر از API
+  const fetchTrainerInfo = async (mongoId: string) => {
+    try {
+      const res = await fetch(`http://localhost:5000/api/trainers/${mongoId}`);
+      const result = await res.json();
+
+      if (!res.ok) throw new Error(result.message || "خطا در دریافت ترینر");
+
+      // اصلاح دسترسی به فیلدها
+      setName(result.trainer?.name || "");
+      setParentType(result.trainer?.parentType || ""); // یا lastName
+      setTrainingYear(result.trainerProgress?.currentTrainingYear || "");
+      setYear(
+        result.trainerProgress?.trainingHistory?.at(-1)?.academicYear ||
+          new Date().getFullYear().toString()
+      );
+    } catch (err) {
+      console.error("❌ خطا در دریافت اطلاعات ترینر:", err);
+      alert("خطا در دریافت اطلاعات ترینر ❌");
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!trainerId) return alert("❌ ID ترینر مشخص نیست!");
 
+    // اعتبارسنجی اولیه
+    if (!trainerId) return alert("❌ ID ترینر مشخص نیست!");
+    if (!name.trim()) return alert("❌ نام ترینی وارد نشده است!");
+    if (!parentType.trim()) return alert("❌ ولد وارد نشده است!");
+    if (!trainingYear.trim()) return alert("❌ سال آموزشی وارد نشده است!");
+    if (!year.trim()) return alert("❌ سال وارد نشده است!");
+
+    // داده آماده برای ارسال
     const dataToSave = {
       trainerId,
       name,
       parentType,
       trainingYear,
+      year,
       sections: sections.map((sec) => ({
         name: sec.name,
         activities: sec.activities.map((act) => ({
@@ -162,14 +204,14 @@ const ChecklistForm: React.FC<checklistsProps> = ({ trainerIdProp }) => {
           percent: act.percent,
           months: months.map((m) => ({
             month: m,
-            value: scores[act.id]?.[m] || 0,
+            checked: checks[act.id]?.[m] || false,
           })),
-          total: calculateTotal(act),
+          notes: notes[act.id] || "",
         })),
-        sectionTotal: calculateSectionTotal(sec),
       })),
-      overallTotal: calculateOverallTotal(),
     };
+
+    console.log("Data to save:", dataToSave); // بررسی داده قبل از ارسال
 
     try {
       const res = await fetch("http://localhost:5000/api/checklists", {
@@ -178,141 +220,161 @@ const ChecklistForm: React.FC<checklistsProps> = ({ trainerIdProp }) => {
         body: JSON.stringify(dataToSave),
       });
 
-      const data = await res.json(); // 👈 این را اضافه کن تا پیام دقیق سرور را بگیری
+      const result = await res.json(); // دریافت پاسخ سرور
 
       if (!res.ok) {
-        // 👇 اگر سرور خطا داد، پیام دقیق را نمایش بده
-        throw new Error(data.error || data.message || "خطای ناشناخته");
+        console.error("Server error:", result);
+        return alert("❌ خطا در ذخیره داده! " + (result.message || ""));
       }
 
       alert("✅ فرم با موفقیت ذخیره شد!");
+      console.log("Server response:", result);
     } catch (err: any) {
-      console.error("❌ خطا در ذخیره داده:", err);
-      alert(`❌ خطا در ذخیره داده: ${err.message}`);
+      console.error("Network or server error:", err);
+      alert("❌ خطا در ذخیره داده! " + (err.message || ""));
     }
   };
 
   return (
-    <div style={{ fontFamily: "Calibri, sans-serif" }}>
-      <>
-        <h1 className="text-2xl font-bold mb-4 text-center">
-          چک لیست کاری و ارزیابی ماهوار ترینی‌های شفاخانه نور
+    <div
+      dir="rtl"
+      style={{ fontFamily: "Calibri, sans-serif" }}
+      className="font-sans max-w-7xl mx-auto p-6 bg-gray-50 rounded-lg shadow"
+    >
+      {/* عنوان فورم */}
+      <div className="text-center mb-6">
+        <h1 className="text-2xl font-bold mb-2">
+          چک‌لیست کاری و ارزیابی ماهوار ترینی‌های شفاخانه
         </h1>
-        {/* اطلاعات ترینی */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-          <input
-            type="text"
-            placeholder="نام ترینی"
-            value={name}
-            readOnly
-            className="border px-3 py-2 rounded-lg bg-gray-200"
-          />
-          <input
-            type="text"
-            placeholder="ولد"
-            value={parentType}
-            readOnly
-            className="border px-3 py-2 rounded-lg bg-gray-200"
-          />
-          <input
-            type="text"
-            placeholder="سال آموزشی"
-            value={trainingYear}
-            readOnly
-            className="border px-3 py-2 rounded-lg bg-gray-200"
-          />
-        </div>
+      </div>
 
-        <form
-          onSubmit={handleSubmit}
-          className="max-w-7xl mx-auto p-6 bg-gray-100 rounded-xl shadow-md"
-        >
-          {/* جدول‌ها */}
-          <div>
-            {sections.map((section) => (
-              <div key={section.name} className="mb-10 min-w-[900px]">
-                <h2 className="text-lg font-semibold mb-2">{section.name}</h2>
-                <table className="w-full border text-center text-sm bg-white rounded-lg shadow-sm">
-                  <thead>
-                    <tr className="bg-gray-200">
-                      <th className="p-2 border">فعالیت</th>
-                      <th className="p-2 border">فیصدی</th>
-                      {months.map((m) => (
-                        <th key={m} className="p-2 border">
-                          {m}
-                        </th>
-                      ))}
-                      <th className="p-2 border">مجموعه نمرات</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {section.activities.map((act) => (
-                      <tr key={act.id}>
-                        <td className="p-2 border">{act.title}</td>
-                        <td className="p-2 border">{act.percent}%</td>
-                        {months.map((m) => (
-                          <td key={m} className="p-2 border">
-                            <input
-                              type="number"
-                              min={0}
-                              max={act.percent}
-                              value={scores[act.id]?.[m] || ""}
-                              onChange={(e) =>
-                                handleScoreChange(
-                                  act.id,
-                                  m,
-                                  Number(e.target.value)
-                                )
-                              }
-                              className="w-6 h-5 text-xs border rounded text-center p-0"
-                            />
-                          </td>
-                        ))}
-                        <td className="p-2 border font-bold">
-                          {calculateTotal(act)}
-                        </td>
-                      </tr>
+      {/* اطلاعات ترینی */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+        <input
+          type="text"
+          placeholder="نام ترینی"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          className="border px-3 py-2 rounded-lg"
+        />
+        <input
+          type="text"
+          placeholder="ولد"
+          value={parentType}
+          onChange={(e) => setParentType(e.target.value)}
+          className="border px-3 py-2 rounded-lg"
+        />
+        <input
+          type="text"
+          placeholder="سال آموزشی"
+          value={trainingYear}
+          onChange={(e) => setTrainingYear(e.target.value)}
+          className="border px-3 py-2 rounded-lg"
+        />
+        <input
+          type="text"
+          placeholder="سال"
+          value={year}
+          onChange={(e) => setYear(e.target.value)}
+          className="border px-3 py-2 rounded-lg"
+        />
+      </div>
+
+      <form onSubmit={handleSubmit}>
+        {sections.map((section) => (
+          <div key={section.name} className="mb-10 overflow-x-auto">
+            <h2 className="text-lg font-semibold mb-2">{section.name}</h2>
+            <table className="w-full border-collapse border text-center text-sm bg-white">
+              <thead className="bg-gray-100">
+                <tr>
+                  <th rowSpan={2} className="border p-2 align-middle">
+                    فعالیت
+                  </th>
+                  <th rowSpan={2} className="border p-2 align-middle">
+                    ٪
+                  </th>
+                  <th colSpan={12} className="border p-2">
+                    ماه‌ها
+                  </th>
+                  <th rowSpan={2} className="border p-2 align-middle">
+                    مجموعه نمرات
+                  </th>
+                  <th rowSpan={2} className="border p-2 align-middle w-40">
+                    ملاحظات
+                  </th>
+                </tr>
+                <tr>
+                  {monthNames.map((month, index) => (
+                    <th
+                      key={index}
+                      onClick={() => toggleMonthColumn(index + 1)}
+                      className="border p-2 text-xs text-gray-700 cursor-pointer hover:bg-blue-100 transition"
+                      title="برای انتخاب یا حذف همه کلیک کنید"
+                    >
+                      {index + 1}
+                      <div className="text-[10px] text-gray-500 mt-1">
+                        {month}
+                      </div>
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+
+              <tbody>
+                {section.activities.map((act) => (
+                  <tr key={act.id}>
+                    <td className="border p-2">{act.title}</td>
+                    <td className="border p-2">{act.percent}%</td>
+                    {months.map((m) => (
+                      <td key={m} className="border p-1">
+                        <input
+                          type="checkbox"
+                          checked={checks[act.id]?.[m] || false}
+                          onChange={() => handleCheckChange(act.id, m)}
+                          className="w-4 h-4 accent-blue-600"
+                        />
+                      </td>
                     ))}
+                    <td className="border p-2"></td>
+                    <td className="border p-1">
+                      <input
+                        type="text"
+                        value={notes[act.id] || ""}
+                        onChange={(e) =>
+                          handleNoteChange(act.id, e.target.value)
+                        }
+                        placeholder="..."
+                        className="border rounded px-2 py-1 text-sm w-full"
+                      />
+                    </td>
+                  </tr>
+                ))}
 
-                    {/* مجموع بخش */}
-                    <tr className="bg-gray-100 font-bold">
-                      <td className="p-2 border" colSpan={2}>
-                        مجموع بخش
-                      </td>
-                      {months.map((m) => {
-                        const totalPerMonth = section.activities.reduce(
-                          (sum, act) => sum + (scores[act.id]?.[m] || 0),
-                          0
-                        );
-                        return (
-                          <td key={m} className="p-2 border">
-                            {totalPerMonth}
-                          </td>
-                        );
-                      })}
-                      <td className="p-2 border">
-                        {calculateSectionTotal(section)}
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            ))}
+                {/* سطر جدید بعد از آخرین فعالیت */}
+                {section.name === "خصوصیات فردی (24%)" && (
+                  <tr>
+                    <td
+                      colSpan={months.length + 3}
+                      className="border p-2 text-right font-semibold"
+                    >
+                      مجموعه کل نمرات
+                    </td>
+                    <td className="border p-2"></td>
+                    <td className="border p-2"></td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
           </div>
+        ))}
 
-          {/* مجموع کل */}
-          <div className="text-right font-bold text-lg mb-4">
-            مجموع کل نمرات: {calculateOverallTotal()}
-          </div>
-
-          <button
-            type="submit"
-            className="mt-6 w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition"
-          >
-            ذخیره
-          </button>
-        </form>
-      </>
+        <button
+          type="submit"
+          className="mt-10 w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition"
+        >
+          ذخیره فورم
+        </button>
+      </form>
     </div>
   );
 };

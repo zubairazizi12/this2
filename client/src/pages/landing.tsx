@@ -74,7 +74,7 @@ export default function Landing() {
               />
             </svg>
           </div>
-          <CardTitle className="text-3xl font-bold text-slate-900">سیستم مدیریتی ترینری شفاخانه چشم نور</CardTitle>
+          <CardTitle className="text-3xl font-bold text-slate-900">سیستم مدیریتی ترینی شفاخانه چشم نور</CardTitle>
           {/* <p className="text-slate-600">ورود به سیستم </p> */}
         </CardHeader>
         <CardContent>

@@ -82,14 +82,14 @@ export default function TrainerActionModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl">
-        <DialogHeader>
-          <DialogTitle className="text-xl font-bold">
-            ثبت اکشن جدید برای: {trainerName}
-          </DialogTitle>
-        </DialogHeader>
+     <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+  <DialogHeader>
+    <DialogTitle className="text-xl font-bold">
+      ثبت اکشن جدید برای: {trainerName}
+    </DialogTitle>
+  </DialogHeader>
 
-        <div className="space-y-4">
+  <div className="space-y-4">
           <div>
             <Label htmlFor="description" className="mb-2 block">
               توضیحات

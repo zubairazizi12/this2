@@ -5,11 +5,14 @@ import Sidebar from "@/components/layout/sidebar";
 import Header from "@/components/layout/header";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { Plus } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
+
+// React Multi Date Picker
+import DatePicker, { DateObject } from "react-multi-date-picker";
+import persian from "react-date-object/calendars/persian";
+import persian_fa from "react-date-object/locales/persian_fa";
 
 interface Vacancy {
   _id: string;
@@ -78,16 +81,17 @@ export default function VacantPosts() {
   return (
     <div className="min-h-screen bg-gray-50">
       <Sidebar />
-      
       <div className="mr-0 md:mr-64">
         <Header />
-        
+
         <div className="pt-16 md:pt-20 p-4 md:p-6 space-y-4">
-          {/* دکمه افزودن بست */}
+          {/* هدر */}
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4">
-            <h2 className="text-xl md:text-2xl font-bold text-slate-800">مدیریت بست‌های خالی</h2>
+            <h2 className="text-xl md:text-2xl font-bold text-slate-800 whitespace-nowrap">
+              مدیریت بست‌های خالی
+            </h2>
             {user?.role === "admin" && (
-              <Button 
+              <Button
                 onClick={() => setOpenDialog(true)}
                 className="w-full sm:w-auto bg-hospital-green-600 hover:bg-hospital-green-700"
               >
@@ -97,7 +101,7 @@ export default function VacantPosts() {
             )}
           </div>
 
-          {/* جدول نمایش بست‌ها */}
+          {/* جدول */}
           <div className="bg-white rounded-lg shadow border border-slate-200 overflow-hidden">
             <div className="overflow-x-auto">
               <table className="min-w-full border-collapse text-sm">
@@ -123,9 +127,7 @@ export default function VacantPosts() {
                     vacancies.map((v, index) => (
                       <tr
                         key={v._id}
-                        className={`${
-                          index % 2 === 0 ? "bg-white" : "bg-slate-50"
-                        } hover:bg-slate-100 transition-colors`}
+                        className={`${index % 2 === 0 ? "bg-white" : "bg-slate-50"} hover:bg-slate-100 transition-colors`}
                       >
                         <td className="px-3 md:px-4 py-3 text-slate-900">{index + 1}</td>
                         <td className="px-3 md:px-4 py-3 text-slate-900 font-medium">{v.name}</td>
@@ -136,12 +138,7 @@ export default function VacantPosts() {
                   ) : (
                     <tr>
                       <td colSpan={4} className="text-center text-gray-500 py-8">
-                        <div className="flex flex-col items-center gap-2">
-                          <svg className="h-12 w-12 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                          </svg>
-                          <p className="text-lg">هیچ بست خالی ثبت نشده است</p>
-                        </div>
+                        هیچ بست خالی ثبت نشده است
                       </td>
                     </tr>
                   )}
@@ -161,46 +158,41 @@ export default function VacantPosts() {
 
           <div className="space-y-4">
             <div>
-              <Label>نام بست</Label>
-              <Input
+              <label className="block mb-1 font-medium">نام بست</label>
+              <input
+                type="text"
                 value={newVacancy.name}
-                onChange={(e) =>
-                  setNewVacancy({ ...newVacancy, name: e.target.value })
-                }
-                placeholder="مثلاً استاد، کارشناس IT"
+                onChange={(e) => setNewVacancy({ ...newVacancy, name: e.target.value })}
+                placeholder="نام بست را بنویسید"
+                className="w-full border rounded px-2 py-1"
               />
             </div>
 
             <div>
-              <Label>تعداد بست</Label>
-              <Input
+              <label className="block mb-1 font-medium">تعداد بست</label>
+              <input
                 type="number"
                 value={newVacancy.count}
-                onChange={(e) =>
-                  setNewVacancy({
-                    ...newVacancy,
-                    count: Number(e.target.value),
-                  })
-                }
+                onChange={(e) => setNewVacancy({ ...newVacancy, count: Number(e.target.value) })}
+                className="w-full border rounded px-2 py-1"
               />
             </div>
 
             <div>
-              <Label>تاریخ ثبت</Label>
-              <Input
-                type="date"
-                value={newVacancy.date}
-                onChange={(e) =>
-                  setNewVacancy({ ...newVacancy, date: e.target.value })
-                }
+              <label className="block mb-1 font-medium">تاریخ ثبت</label>
+              <DatePicker
+                value={newVacancy.date ? new DateObject({ date: newVacancy.date, calendar: persian, locale: persian_fa }) : null}
+                onChange={(date: DateObject) => setNewVacancy({ ...newVacancy, date: date.format("YYYY-MM-DD") })}
+                calendar={persian}
+                locale={persian_fa}
+                format="YYYY/MM/DD"
+                placeholder="انتخاب تاریخ"
+                inputClass="w-full border rounded px-2 py-1"
               />
             </div>
 
             <div className="flex justify-end pt-3">
-              <Button 
-                onClick={handleAddVacancy}
-                disabled={createMutation.isPending}
-              >
+              <Button onClick={handleAddVacancy} disabled={createMutation.isPending}>
                 {createMutation.isPending ? "در حال ثبت..." : "ثبت بست"}
               </Button>
             </div>

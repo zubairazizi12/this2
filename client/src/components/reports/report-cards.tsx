@@ -10,7 +10,7 @@ import TrainerReports from "./TrainerReports"; // 👉 اینو اضافه کن
 
 const reports = [
   {
-    title: "گزارشات ترینری",
+    title: "گزارشات ترینی",
     icon: Users,
     color: "bg-hospital-green-100 text-hospital-green-600",
     buttonColor: "bg-hospital-green-600 hover:bg-hospital-green-700",
@@ -54,7 +54,7 @@ export default function ReportCards() {
     //   setShowTeachersReport(false);
     //   setShowTrainerReport(false);
     // } 
-    else if (reportType === "گزارشات ترینری") {
+    else if (reportType === "گزارشات ترینی") {
       setShowTrainerReport(true);
       setShowTeachersReport(false);
       setShowFormsReport(false);

@@ -17,6 +17,7 @@ export default function EvaluationFormH({
   const [Name, setName] = useState("");
   const [parentType, setparentType] = useState("");
   const [department, setDepartment] = useState("");
+  const [trainingYear, setTrainingYear] = useState("");
 
   // 🔹 جدول سال‌های ترینینگ
   const [years, setYears] = useState<TrainingYear[]>([
@@ -30,37 +31,38 @@ export default function EvaluationFormH({
   const [shiftDepartment, setShiftDepartment] = useState("");
   const [programDirector, setProgramDirector] = useState("");
   //////////////////////////////////////////
-    useEffect(() => {
-        if (!trainerIdProp) {
-          alert("هیچ ترینر فعالی یافت نشد!");
-          return;
-        }
-    
-        setTrainerId(trainerIdProp);
-    
-        // 👇 دریافت داده از دیتابیس
-        const fetchTrainerInfo = async () => {
-          try {
-            const res = await fetch(
-              `http://localhost:5000/api/trainers/${trainerIdProp}`
-            );
-            const result = await res.json();
-    
-            if (!res.ok) throw new Error(result.message || "خطا در دریافت ترینر");
-    
-            // فرض می‌کنیم دیتابیس این فیلدها را دارد:
-            // name, fatherName, trainingYear
-            setName(result.name || "");
-            setparentType(result.parentType || "");
-            setDepartment(result.department||"");
-          } catch (err) {
-            console.error("خطا در دریافت ترینر:", err);
-            alert("خطا در دریافت اطلاعات ترینر ❌");
-          }
-        };
-    
-        fetchTrainerInfo();
-      }, [trainerIdProp]);
+  useEffect(() => {
+    if (!trainerIdProp) {
+      alert("هیچ ترینر فعالی یافت نشد!");
+      return;
+    }
+
+    setTrainerId(trainerIdProp);
+
+    // 👇 دریافت داده از دیتابیس
+    const fetchTrainerInfo = async () => {
+      try {
+        const res = await fetch(
+          `http://localhost:5000/api/trainers/${trainerIdProp}`
+        );
+        const result = await res.json();
+
+        if (!res.ok) throw new Error(result.message || "خطا در دریافت ترینر");
+
+        // فرض می‌کنیم دیتابیس این فیلدها را دارد:
+        // name, fatherName, trainingYear
+        setName(result.trainer?.name || "");
+        setparentType(result.trainer?.parentType || "");
+        setDepartment(result.trainer?.department || "");
+        setTrainingYear(result.trainerProgress?.currentTrainingYear || "");
+      } catch (err) {
+        console.error("خطا در دریافت ترینر:", err);
+        alert("خطا در دریافت اطلاعات ترینر ❌");
+      }
+    };
+
+    fetchTrainerInfo();
+  }, [trainerIdProp]);
   /////////////////////////////////////////
 
   const inputClass = "border px-2 py-2 w-full text-center";
@@ -120,6 +122,7 @@ export default function EvaluationFormH({
     if (
       !averageScore.trim() ||
       !shiftDepartment.trim() ||
+      !trainingYear.trim()||
       !programDirector.trim()
     ) {
       alert(
@@ -134,6 +137,7 @@ export default function EvaluationFormH({
       Name: Name.trim(),
       parentType: parentType.trim(),
       department: department.trim(),
+      trainingYear: trainingYear.trim(),
       trainingYears: years.map((y) => ({
         ...y,
         totalScore: y.totalScore.trim(),
@@ -160,6 +164,7 @@ export default function EvaluationFormH({
       setName("");
       setparentType("");
       setDepartment("");
+      setTrainingYear("");
       setYears([
         { year: "سال اول", totalScore: "", instructor: "" },
         { year: "سال دوم", totalScore: "", instructor: "" },
@@ -189,10 +194,10 @@ export default function EvaluationFormH({
       )}
 
       {/* 📋 معلومات شخصی */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
         <input
           type="text"
-          placeholder="نام دستیار"
+          placeholder="نام"
           value={Name}
           onChange={(e) => setName(e.target.value)}
           className={inputClass}
@@ -209,6 +214,14 @@ export default function EvaluationFormH({
           placeholder="دپارتمان"
           value={department}
           onChange={(e) => setDepartment(e.target.value)}
+          className={inputClass}
+        />
+        {/* ✅ فیلد جدید: سال ترینینگ */}
+        <input
+          type="text"
+          placeholder="سال تریننگ)"
+          value={trainingYear}
+          onChange={(e) => setTrainingYear(e.target.value)}
           className={inputClass}
         />
       </div>

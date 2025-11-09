@@ -18,13 +18,27 @@ export class MonographEvaluationController {
         startYear,
         date,
         evaluations,
+        summary, // 🔹 اضافه شد
       } = req.body;
 
       if (!trainer) {
         return res.status(400).json({ message: "Trainer ID الزامی است" });
       }
 
-        
+      // 🔹 جلوگیری از ثبت فرم تکراری بر اساس سال ترینینگ برای همان ترینر
+      const existingYearForm = await MonographEvaluation.findOne({
+        trainer: new mongoose.Types.ObjectId(trainer),
+        trainingYear: trainingYear.toString().trim(),
+      });
+
+      if (existingYearForm) {
+        return res.status(400).json({
+          message:
+            "⚠️ این ترینی قبلاً برای این سال فرم مونوگراف را ثبت کرده است. لطفاً ترینی را ارتقا دهید.",
+          formId: existingYearForm._id,
+        });
+      }
+
       const form = new MonographEvaluation({
         trainer: new mongoose.Types.ObjectId(trainer),
         name,
@@ -36,6 +50,7 @@ export class MonographEvaluationController {
         startYear,
         date,
         evaluations,
+        summary, // 🔹 ذخیره summary جدا
       });
 
       await form.save();

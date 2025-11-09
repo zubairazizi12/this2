@@ -2,19 +2,19 @@
 import React, { useEffect, useState, useRef } from "react";
 import * as XLSX from "xlsx";
 
-interface FormEDetailsProps {
-  trainerId: string;
-  onClose?: () => void;
-}
-
 interface Score {
   score: number;
   teacherName: string;
 }
+interface FormEDetailsProps {
+  trainerId?: string;
+  formId?: string; // ← اضافه شد
+  selectedYear: string;
+  onClose?: () => void;
+}
 
 interface FormE {
   _id: string;
-  trainerId: string;
   trainer: string;
   Name: string;
   parentType: string;
@@ -25,37 +25,84 @@ interface FormE {
   averageScore: number;
 }
 
-export default function FormEDetails({ trainerId, onClose }: FormEDetailsProps) {
+export default function FormEDetails({
+  trainerId,
+  selectedYear,
+  formId,
+  onClose,
+}: FormEDetailsProps) {
   const [data, setData] = useState<FormE | null>(null);
   const [editing, setEditing] = useState(false);
   const [loading, setLoading] = useState(false);
+   const [error, setError] = useState<string | null>(null);
   const printRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-        const res = await fetch(`/api/evaluationFormE?trainerId=${trainerId}`);
-        if (!res.ok) throw new Error("خطا در دریافت داده‌ها");
-        const result = await res.json();
-        const form = Array.isArray(result) ? result[0] : result;
-        setData({ ...form, scores: form.scores || [] });
-      } catch (err) {
-        console.error(err);
-        setData(null);
-      } finally {
-        setLoading(false);
-      }
-    };
-    if (trainerId) fetchData();
-  }, [trainerId]);
 
-  const handleChangeMainField = (field: keyof FormE, value: string | number) => {
+
+   const fetchData = async () => {
+    if (!trainerId) return;
+    setLoading(true);
+    setError(null);
+
+    try {
+      // 1️⃣ دریافت TrainerProgress
+      const progressRes = await fetch(
+        `http://localhost:5000/api/trainerProgress/${trainerId}`
+      );
+      if (!progressRes.ok) throw new Error("TrainerProgress یافت نشد");
+      const progress = await progressRes.json();
+
+      // 2️⃣ پیدا کردن سال انتخاب‌شده یا سال فعلی
+      const targetYearLabel = selectedYear || progress.currentTrainingYear;
+      const yearData = progress.trainingHistory.find(
+        (y: any) => y.yearLabel === targetYearLabel
+      );
+
+      if (!yearData) throw new Error(`سال ${targetYearLabel} یافت نشد`);
+
+      // 3️⃣ گرفتن آیدی فرم E مخصوص آن سال
+      const formId = yearData.forms?.formE;
+      if (!formId) throw new Error(`فرم E برای ${targetYearLabel} هنوز ساخته نشده است`);
+
+      // 4️⃣ واکشی فرم واقعی
+      const res = await fetch(`/api/evaluationFormE/${formId}`);
+      if (!res.ok) throw new Error("فرم E یافت نشد");
+      const result = await res.json();
+
+      // 5️⃣ نرمال‌سازی داده‌ها در صورت نیاز
+      setData({
+        ...result,
+        scores: result.scores || [],
+      });
+    } catch (err: any) {
+      console.error(err);
+      setError(err?.message || "خطا در بارگذاری فرم E");
+      setData(null);
+    } finally {
+      setLoading(false);
+    }
+  };
+  // ✅ دریافت داده‌ها بر اساس formId یا trainerId
+ useEffect(() => {
+ 
+
+  fetchData();
+}, [trainerId, selectedYear]); // ✅ وابستگی‌ها مثل فرم F
+
+
+  const handleChangeMainField = (
+    field: keyof FormE,
+    value: string | number
+  ) => {
     if (!data) return;
     setData({ ...data, [field]: value });
   };
 
-  const handleChangeScore = (idx: number, field: keyof Score, value: string | number) => {
+  const handleChangeScore = (
+    idx: number,
+    field: keyof Score,
+    value: string | number
+  ) => {
     if (!data) return;
     const newScores = [...data.scores];
     newScores[idx] = { ...newScores[idx], [field]: value };
@@ -129,7 +176,7 @@ export default function FormEDetails({ trainerId, onClose }: FormEDetailsProps) 
         "نمره داده شده": data.scores[idx]?.score ?? "",
         "نام استاد": data.scores[idx]?.teacherName ?? "",
         "امضای استاد": "",
-        "ملاحظات": "",
+        ملاحظات: "",
       }))
     );
     XLSX.utils.book_append_sheet(wb, scoresWS, "FormE");
@@ -137,52 +184,119 @@ export default function FormEDetails({ trainerId, onClose }: FormEDetailsProps) 
   };
 
   if (loading) return <div className="p-4 text-center">در حال بارگذاری...</div>;
-  if (!data) return <div className="p-4 text-center">فرمی برای این ترینر موجود نیست</div>;
+  if (!data)
+    return (
+      <div className="p-4 text-center">فرمی برای این ترینر موجود نیست</div>
+    );
 
   return (
     <div className="p-4">
       <div className="mb-4 flex items-center justify-between">
-        <h2 className="text-lg font-semibold">Form E - فرم ارزشیابی سالانه دستیار</h2>
+        <h2 className="text-lg font-semibold">
+          Form E - فرم ارزشیابی سالانه دستیار
+        </h2>
         <div className="space-x-2">
           {editing ? (
-            <button onClick={handleSave} className="bg-green-600 text-white px-3 py-1 rounded">ذخیره</button>
+            <button
+              onClick={handleSave}
+              className="bg-green-600 text-white px-3 py-1 rounded"
+            >
+              ذخیره
+            </button>
           ) : (
             <>
-              <button onClick={() => setEditing(true)} className="bg-blue-600 text-white px-3 py-1 rounded">ویرایش</button>
-              <button onClick={handlePrint} className="bg-green-600 text-white px-3 py-1 rounded">چاپ</button>
-              <button onClick={handleExportExcel} className="bg-yellow-500 text-white px-3 py-1 rounded">Excel</button>
+              <button
+                onClick={() => setEditing(true)}
+                className="bg-blue-600 text-white px-3 py-1 rounded"
+              >
+                ویرایش
+              </button>
+              <button
+                onClick={handlePrint}
+                className="bg-green-600 text-white px-3 py-1 rounded"
+              >
+                چاپ
+              </button>
+              <button
+                onClick={handleExportExcel}
+                className="bg-yellow-500 text-white px-3 py-1 rounded"
+              >
+                Excel
+              </button>
             </>
           )}
-          {onClose && <button onClick={onClose} className="bg-gray-500 text-white px-3 py-1 rounded">بستن</button>}
+          {onClose && (
+            <button
+              onClick={onClose}
+              className="bg-gray-500 text-white px-3 py-1 rounded"
+            >
+              بستن
+            </button>
+          )}
         </div>
       </div>
 
-      <div ref={printRef} className="overflow-auto border rounded-lg p-4 bg-white">
+      <div
+        ref={printRef}
+        className="overflow-auto border rounded-lg p-4 bg-white"
+      >
         {/* اطلاعات شخصی در یک ردیف */}
         <div className="personal-info">
           <div>
             <label className="font-medium">نام</label>
             {editing ? (
-              <input type="text" value={data.Name} onChange={(e) => handleChangeMainField("Name", e.target.value)} className="w-full border px-2 py-1 rounded" />
-            ) : <div>{data.Name}</div>}
+              <input
+                type="text"
+                value={data.Name}
+                onChange={(e) => handleChangeMainField("Name", e.target.value)}
+                className="w-full border px-2 py-1 rounded"
+              />
+            ) : (
+              <div>{data.Name}</div>
+            )}
           </div>
           <div>
             <label className="font-medium">نام پدر</label>
             {editing ? (
-              <input type="text" value={data.parentType} onChange={(e) => handleChangeMainField("parentType", e.target.value)} className="w-full border px-2 py-1 rounded" />
-            ) : <div>{data.parentType}</div>}
+              <input
+                type="text"
+                value={data.parentType}
+                onChange={(e) =>
+                  handleChangeMainField("parentType", e.target.value)
+                }
+                className="w-full border px-2 py-1 rounded"
+              />
+            ) : (
+              <div>{data.parentType}</div>
+            )}
           </div>
           <div>
             <label className="font-medium">سال تریننگ</label>
             {editing ? (
-              <input type="text" value={data.trainingYear} onChange={(e) => handleChangeMainField("trainingYear", e.target.value)} className="w-full border px-2 py-1 rounded" />
-            ) : <div>{data.trainingYear}</div>}
+              <input
+                type="text"
+                value={data.trainingYear}
+                onChange={(e) =>
+                  handleChangeMainField("trainingYear", e.target.value)
+                }
+                className="w-full border px-2 py-1 rounded"
+              />
+            ) : (
+              <div>{data.trainingYear}</div>
+            )}
           </div>
           <div>
             <label className="font-medium">تاریخ</label>
             {editing ? (
-              <input type="date" value={data.date} onChange={(e) => handleChangeMainField("date", e.target.value)} className="w-full border px-2 py-1 rounded" />
-            ) : <div>{data.date}</div>}
+              <input
+                type="date"
+                value={data.date}
+                onChange={(e) => handleChangeMainField("date", e.target.value)}
+                className="w-full border px-2 py-1 rounded"
+              />
+            ) : (
+              <div>{data.date}</div>
+            )}
           </div>
         </div>
 
@@ -201,17 +315,39 @@ export default function FormEDetails({ trainerId, onClose }: FormEDetailsProps) 
             {Array.from({ length: 6 }).map((_, idx) => (
               <tr key={idx}>
                 {idx === 0 && (
-                  <td rowSpan={6} className="border p-2 align-top">{data.incidentTitle}</td>
+                  <td rowSpan={6} className="border p-2 align-top">
+                    {data.incidentTitle}
+                  </td>
                 )}
                 <td className="border p-2">
                   {editing ? (
-                    <input type="number" min={0} max={100} value={data.scores[idx]?.score ?? ""} onChange={(e) => handleChangeScore(idx, "score", Number(e.target.value))} className="w-full border px-2 py-1 rounded" />
-                  ) : data.scores[idx]?.score ?? ""}
+                    <input
+                      type="number"
+                      min={0}
+                      max={100}
+                      value={data.scores[idx]?.score ?? ""}
+                      onChange={(e) =>
+                        handleChangeScore(idx, "score", Number(e.target.value))
+                      }
+                      className="w-full border px-2 py-1 rounded"
+                    />
+                  ) : (
+                    data.scores[idx]?.score ?? ""
+                  )}
                 </td>
                 <td className="border p-2">
                   {editing ? (
-                    <input type="text" value={data.scores[idx]?.teacherName ?? ""} onChange={(e) => handleChangeScore(idx, "teacherName", e.target.value)} className="w-full border px-2 py-1 rounded" />
-                  ) : data.scores[idx]?.teacherName ?? ""}
+                    <input
+                      type="text"
+                      value={data.scores[idx]?.teacherName ?? ""}
+                      onChange={(e) =>
+                        handleChangeScore(idx, "teacherName", e.target.value)
+                      }
+                      className="w-full border px-2 py-1 rounded"
+                    />
+                  ) : (
+                    data.scores[idx]?.teacherName ?? ""
+                  )}
                 </td>
                 <td className="border p-2"></td>
                 <td className="border p-2"></td>
@@ -219,7 +355,9 @@ export default function FormEDetails({ trainerId, onClose }: FormEDetailsProps) 
             ))}
             <tr>
               <td className="border p-2 font-semibold">اوسط نمرات</td>
-              <td className="border p-2" colSpan={3}>{data.averageScore}</td>
+              <td className="border p-2" colSpan={3}>
+                {data.averageScore}
+              </td>
             </tr>
           </tbody>
         </table>

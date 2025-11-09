@@ -3,7 +3,9 @@ import React, { useEffect, useState, useRef } from "react";
 import * as XLSX from "xlsx";
 
 interface FormGDetailsProps {
-  trainerId: string;
+  trainerId?: string;
+  formId?: string;
+  selectedYear: string;
   onClose?: () => void;
 }
 
@@ -37,52 +39,95 @@ interface FormG {
   hospitalHead?: string;
 }
 
-export default function FormGDetails({ trainerId, onClose }: FormGDetailsProps) {
+export default function FormGDetails({
+  trainerId,
+  selectedYear,
+  formId,
+  onClose,
+}: FormGDetailsProps) {
   const [data, setData] = useState<FormG | null>(null);
   const [editing, setEditing] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const printRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-        const res = await fetch(`/api/evaluationFormG?trainerId=${trainerId}`);
-        if (res.status === 404) {
-          setData(null);
-          return;
-        }
-        if (!res.ok) throw new Error("خطا در دریافت داده‌ها");
-        const result = await res.json();
-        const form = Array.isArray(result) ? result[0] : result;
-        setData({
-          ...form,
-          scores: form.scores || [],
-          personalInfo: form.personalInfo || {
-            Name: "",
-            parentType: "",
-            department: "",
-            trainingYear: "",
-            year: "",
-          },
-        });
-      } catch (err) {
-        console.error("Error fetching Form G:", err);
-        setData(null);
-      } finally {
-        setLoading(false);
-      }
-    };
-    if (trainerId) fetchData();
-  }, [trainerId]);
+  const fetchData = async () => {
+    if (!trainerId) return;
+    setLoading(true);
+    setError(null);
 
-  const handleChangePersonalInfo = (field: keyof PersonalInfo, value: string) => {
-    if (!data) return;
-    setData({ ...data, personalInfo: { ...data.personalInfo, [field]: value } });
+    try {
+      // 1️⃣ دریافت TrainerProgress
+      const progressRes = await fetch(
+        `http://localhost:5000/api/trainerProgress/${trainerId}`
+      );
+      if (!progressRes.ok) throw new Error("TrainerProgress یافت نشد");
+      const progress = await progressRes.json();
+
+      // 2️⃣ پیدا کردن سال انتخاب‌شده یا سال فعلی
+      const targetYearLabel = selectedYear || progress.currentTrainingYear;
+      const yearData = progress.trainingHistory.find(
+        (y: any) => y.yearLabel === targetYearLabel
+      );
+
+      if (!yearData) throw new Error(`سال ${targetYearLabel} یافت نشد`);
+
+      // 3️⃣ گرفتن آیدی فرم G مخصوص آن سال
+      const formId = yearData.forms?.formG;
+      if (!formId)
+        throw new Error(`فرم G برای ${targetYearLabel} هنوز ساخته نشده است`);
+
+      // 4️⃣ واکشی فرم واقعی
+      const res = await fetch(`/api/evaluationFormG/${formId}`);
+      if (res.status === 404) {
+        setData(null);
+        return;
+      }
+      if (!res.ok) throw new Error("فرم G یافت نشد");
+      const result = await res.json();
+
+      // 5️⃣ نرمال‌سازی داده‌ها
+      setData({
+        ...result,
+        scores: result.scores || [],
+        personalInfo: result.personalInfo || {
+          Name: "",
+          parentType: "",
+          department: "",
+          trainingYear: "",
+          year: "",
+        },
+      });
+    } catch (err: any) {
+      console.error(err);
+      setError(err?.message || "خطا در بارگذاری فرم G");
+      setData(null);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleScoreChange = (idx: number, field: keyof Score, value: string | number) => {
+  useEffect(() => {
+    fetchData();
+  }, [trainerId, selectedYear]); // ✅ وابستگی‌ها مثل فرم F
+
+  const handleChangePersonalInfo = (
+    field: keyof PersonalInfo,
+    value: string
+  ) => {
+    if (!data) return;
+    setData({
+      ...data,
+      personalInfo: { ...data.personalInfo, [field]: value },
+    });
+  };
+
+  const handleScoreChange = (
+    idx: number,
+    field: keyof Score,
+    value: string | number
+  ) => {
     if (!data) return;
     const newScores = [...data.scores];
     newScores[idx] = { ...newScores[idx], [field]: value };
@@ -97,9 +142,14 @@ export default function FormGDetails({ trainerId, onClose }: FormGDetailsProps) 
       Number(s.finalPractical);
 
     const avg =
-      newScores.reduce((acc, cur) => acc + cur.total, 0) / (newScores.length || 1);
+      newScores.reduce((acc, cur) => acc + cur.total, 0) /
+      (newScores.length || 1);
 
-    setData({ ...data, scores: newScores, averageScore: parseFloat(avg.toFixed(2)) });
+    setData({
+      ...data,
+      scores: newScores,
+      averageScore: parseFloat(avg.toFixed(2)),
+    });
   };
 
   const handleSave = async () => {
@@ -198,7 +248,14 @@ export default function FormGDetails({ trainerId, onClose }: FormGDetailsProps) 
     return (
       <div className="p-4 text-center">
         <div className="text-red-500 mb-4">فرمی برای این ترینر موجود نیست</div>
-        {onClose && <button onClick={onClose} className="bg-gray-500 text-white px-4 py-2 rounded">بستن</button>}
+        {onClose && (
+          <button
+            onClick={onClose}
+            className="bg-gray-500 text-white px-4 py-2 rounded"
+          >
+            بستن
+          </button>
+        )}
       </div>
     );
 
@@ -208,39 +265,134 @@ export default function FormGDetails({ trainerId, onClose }: FormGDetailsProps) 
       <div className="mb-4 flex items-center justify-between">
         <h2 className="text-lg font-semibold">Form G - فرم ارزیابی امتحانات</h2>
         <div className="space-x-2">
-          <button onClick={handlePrint} className="bg-green-600 text-white px-3 py-1 rounded">PDF</button>
-          <button onClick={handleExportExcel} className="bg-yellow-500 text-white px-3 py-1 rounded">Excel</button>
+          <button
+            onClick={handlePrint}
+            className="bg-green-600 text-white px-3 py-1 rounded"
+          >
+            PDF
+          </button>
+          <button
+            onClick={handleExportExcel}
+            className="bg-yellow-500 text-white px-3 py-1 rounded"
+          >
+            Excel
+          </button>
           {editing ? (
             <>
-              <button onClick={handleSave} disabled={saving} className="bg-green-600 text-white px-3 py-1 rounded">{saving ? "در حال ذخیره..." : "ذخیره"}</button>
-              <button onClick={() => setEditing(false)} className="bg-red-600 text-white px-3 py-1 rounded">لغو</button>
+              <button
+                onClick={handleSave}
+                disabled={saving}
+                className="bg-green-600 text-white px-3 py-1 rounded"
+              >
+                {saving ? "در حال ذخیره..." : "ذخیره"}
+              </button>
+              <button
+                onClick={() => setEditing(false)}
+                className="bg-red-600 text-white px-3 py-1 rounded"
+              >
+                لغو
+              </button>
             </>
           ) : (
-            <button onClick={() => setEditing(true)} className="bg-blue-600 text-white px-3 py-1 rounded">ویرایش</button>
+            <button
+              onClick={() => setEditing(true)}
+              className="bg-blue-600 text-white px-3 py-1 rounded"
+            >
+              ویرایش
+            </button>
           )}
-          {onClose && <button onClick={onClose} className="bg-gray-500 text-white px-3 py-1 rounded">بستن</button>}
+          {onClose && (
+            <button
+              onClick={onClose}
+              className="bg-gray-500 text-white px-3 py-1 rounded"
+            >
+              بستن
+            </button>
+          )}
         </div>
       </div>
-
-      <div ref={printRef} className="overflow-auto border rounded-lg max-h-[70vh] p-4 bg-white">
+      <div
+        ref={printRef}
+        className="overflow-auto border rounded-lg max-h-[70vh] p-4 bg-white"
+      >
         {/* مشخصات فردی */}
         <table className="min-w-full border border-slate-300 mb-6">
           <tbody>
             <tr>
               <td className="font-semibold px-3 py-2 border">نام</td>
-              <td className="px-3 py-2 border">{editing ? <input className="w-full border px-2 py-1 rounded" value={data.personalInfo.Name} onChange={e => handleChangePersonalInfo("Name", e.target.value)} /> : data.personalInfo.Name}</td>
+              <td className="px-3 py-2 border">
+                {editing ? (
+                  <input
+                    className="w-full border px-2 py-1 rounded"
+                    value={data.personalInfo.Name}
+                    onChange={(e) =>
+                      handleChangePersonalInfo("Name", e.target.value)
+                    }
+                  />
+                ) : (
+                  data.personalInfo.Name
+                )}
+              </td>
               <td className="font-semibold px-3 py-2 border">نام پدر</td>
-              <td className="px-3 py-2 border">{editing ? <input className="w-full border px-2 py-1 rounded" value={data.personalInfo.parentType} onChange={e => handleChangePersonalInfo("parentType", e.target.value)} /> : data.personalInfo.parentType}</td>
+              <td className="px-3 py-2 border">
+                {editing ? (
+                  <input
+                    className="w-full border px-2 py-1 rounded"
+                    value={data.personalInfo.parentType}
+                    onChange={(e) =>
+                      handleChangePersonalInfo("parentType", e.target.value)
+                    }
+                  />
+                ) : (
+                  data.personalInfo.parentType
+                )}
+              </td>
             </tr>
             <tr>
               <td className="font-semibold px-3 py-2 border">دیپارتمنت</td>
-              <td className="px-3 py-2 border">{editing ? <input className="w-full border px-2 py-1 rounded" value={data.personalInfo.department} onChange={e => handleChangePersonalInfo("department", e.target.value)} /> : data.personalInfo.department}</td>
+              <td className="px-3 py-2 border">
+                {editing ? (
+                  <input
+                    className="w-full border px-2 py-1 rounded"
+                    value={data.personalInfo.department}
+                    onChange={(e) =>
+                      handleChangePersonalInfo("department", e.target.value)
+                    }
+                  />
+                ) : (
+                  data.personalInfo.department
+                )}
+              </td>
               <td className="font-semibold px-3 py-2 border">سال آموزش</td>
-              <td className="px-3 py-2 border">{editing ? <input className="w-full border px-2 py-1 rounded" value={data.personalInfo.trainingYear} onChange={e => handleChangePersonalInfo("trainingYear", e.target.value)} /> : data.personalInfo.trainingYear}</td>
+              <td className="px-3 py-2 border">
+                {editing ? (
+                  <input
+                    className="w-full border px-2 py-1 rounded"
+                    value={data.personalInfo.trainingYear}
+                    onChange={(e) =>
+                      handleChangePersonalInfo("trainingYear", e.target.value)
+                    }
+                  />
+                ) : (
+                  data.personalInfo.trainingYear
+                )}
+              </td>
             </tr>
             <tr>
               <td className="font-semibold px-3 py-2 border">سال</td>
-              <td className="px-3 py-2 border" colSpan={3}>{editing ? <input className="w-full border px-2 py-1 rounded" value={data.personalInfo.year} onChange={e => handleChangePersonalInfo("year", e.target.value)} /> : data.personalInfo.year}</td>
+              <td className="px-3 py-2 border" colSpan={3}>
+                {editing ? (
+                  <input
+                    className="w-full border px-2 py-1 rounded"
+                    value={data.personalInfo.year}
+                    onChange={(e) =>
+                      handleChangePersonalInfo("year", e.target.value)
+                    }
+                  />
+                ) : (
+                  data.personalInfo.year
+                )}
+              </td>
             </tr>
           </tbody>
         </table>
@@ -262,57 +414,189 @@ export default function FormGDetails({ trainerId, onClose }: FormGDetailsProps) 
               </tr>
             </thead>
             <tbody>
-              {data.scores.map((score, idx) => (
-                <tr key={idx}>
-                  <td className="p-2 border text-center">{idx + 1}</td>
-                  {editing ? (
-                    <>
-                      <td className="p-2 border"><input className="w-full border px-1 py-0.5 text-center rounded" type="number" value={score.exam1Written} onChange={e => handleScoreChange(idx,"exam1Written", Number(e.target.value))} /></td>
-                      <td className="p-2 border"><input className="w-full border px-1 py-0.5 text-center rounded" type="number" value={score.exam1Practical} onChange={e => handleScoreChange(idx,"exam1Practical", Number(e.target.value))} /></td>
-                      <td className="p-2 border"><input className="w-full border px-1 py-0.5 text-center rounded" type="number" value={score.exam2Written} onChange={e => handleScoreChange(idx,"exam2Written", Number(e.target.value))} /></td>
-                      <td className="p-2 border"><input className="w-full border px-1 py-0.5 text-center rounded" type="number" value={score.exam2Practical} onChange={e => handleScoreChange(idx,"exam2Practical", Number(e.target.value))} /></td>
-                      <td className="p-2 border"><input className="w-full border px-1 py-0.5 text-center rounded" type="number" value={score.finalWritten} onChange={e => handleScoreChange(idx,"finalWritten", Number(e.target.value))} /></td>
-                      <td className="p-2 border"><input className="w-full border px-1 py-0.5 text-center rounded" type="number" value={score.finalPractical} onChange={e => handleScoreChange(idx,"finalPractical", Number(e.target.value))} /></td>
-                      <td className="p-2 border font-bold text-center">{score.total}</td>
-                      <td className="p-2 border"><input className="w-full border px-1 py-0.5 rounded" type="text" value={score.teacherName} onChange={e => handleScoreChange(idx,"teacherName", e.target.value)} /></td>
-                    </>
-                  ) : (
-                    <>
-                      <td className="p-2 border text-center">{score.exam1Written}</td>
-                      <td className="p-2 border text-center">{score.exam1Practical}</td>
-                      <td className="p-2 border text-center">{score.exam2Written}</td>
-                      <td className="p-2 border text-center">{score.exam2Practical}</td>
-                      <td className="p-2 border text-center">{score.finalWritten}</td>
-                      <td className="p-2 border text-center">{score.finalPractical}</td>
-                      <td className="p-2 border text-center font-bold">{score.total}</td>
-                      <td className="p-2 border">{score.teacherName}</td>
-                    </>
-                  )}
-                </tr>
-              ))}
+              {data.scores.map((score, idx) =>
+                score.teacherName === "Average" ? (
+                  // ✅ ردیف مخصوص Average
+                  <tr key={idx} className="bg-gray-100 font-bold text-center">
+                    <td className="border  py-2">{idx + 1}</td>
+                    <td className="border px-2 py-2   "  colSpan={2}>{score.exam1Written}</td>
+                    <td className="border px-2 py-2 " colSpan={2}>{score.exam2Written}</td>
+                    <td className="border px-2 py-2  " colSpan={2}>{score.finalWritten}</td>
+                    <td className="border  py-2">{score.total}</td>
+                    <td className="border px-2 py-2" colSpan={4}>
+                      {score.teacherName}
+                    </td>
+                  </tr>
+                ) : (
+                  // ✅ ردیف‌های عادی
+                  <tr key={idx}>
+                    <td className="p-2 border text-center">{idx + 1}</td>
+                    {editing ? (
+                      <>
+                        <td className="p-2 border">
+                          <input
+                            className="w-full border px-1 py-0.5 text-center rounded"
+                            type="number"
+                            value={score.exam1Written}
+                            onChange={(e) =>
+                              handleScoreChange(
+                                idx,
+                                "exam1Written",
+                                Number(e.target.value)
+                              )
+                            }
+                          />
+                        </td>
+                        <td className="p-2 border">
+                          <input
+                            className="w-full border px-1 py-0.5 text-center rounded"
+                            type="number"
+                            value={score.exam1Practical}
+                            onChange={(e) =>
+                              handleScoreChange(
+                                idx,
+                                "exam1Practical",
+                                Number(e.target.value)
+                              )
+                            }
+                          />
+                        </td>
+                        <td className="p-2 border">
+                          <input
+                            className="w-full border px-1 py-0.5 text-center rounded"
+                            type="number"
+                            value={score.exam2Written}
+                            onChange={(e) =>
+                              handleScoreChange(
+                                idx,
+                                "exam2Written",
+                                Number(e.target.value)
+                              )
+                            }
+                          />
+                        </td>
+                        <td className="p-2 border">
+                          <input
+                            className="w-full border px-1 py-0.5 text-center rounded"
+                            type="number"
+                            value={score.exam2Practical}
+                            onChange={(e) =>
+                              handleScoreChange(
+                                idx,
+                                "exam2Practical",
+                                Number(e.target.value)
+                              )
+                            }
+                          />
+                        </td>
+                        <td className="p-2 border">
+                          <input
+                            className="w-full border px-1 py-0.5 text-center rounded"
+                            type="number"
+                            value={score.finalWritten}
+                            onChange={(e) =>
+                              handleScoreChange(
+                                idx,
+                                "finalWritten",
+                                Number(e.target.value)
+                              )
+                            }
+                          />
+                        </td>
+                        <td className="p-2 border">
+                          <input
+                            className="w-full border px-1 py-0.5 text-center rounded"
+                            type="number"
+                            value={score.finalPractical}
+                            onChange={(e) =>
+                              handleScoreChange(
+                                idx,
+                                "finalPractical",
+                                Number(e.target.value)
+                              )
+                            }
+                          />
+                        </td>
+                        <td className="p-2 border font-bold text-center">
+                          {score.total}
+                        </td>
+                        <td className="p-2 border">
+                          <input
+                            className="w-full border px-1 py-0.5 rounded"
+                            type="text"
+                            value={score.teacherName}
+                            onChange={(e) =>
+                              handleScoreChange(
+                                idx,
+                                "teacherName",
+                                e.target.value
+                              )
+                            }
+                          />
+                        </td>
+                      </>
+                    ) : (
+                      <>
+                        <td className="p-2 border text-center">
+                          {score.exam1Written}
+                        </td>
+                        <td className="p-2 border text-center">
+                          {score.exam1Practical}
+                        </td>
+                        <td className="p-2 border text-center">
+                          {score.exam2Written}
+                        </td>
+                        <td className="p-2 border text-center">
+                          {score.exam2Practical}
+                        </td>
+                        <td className="p-2 border text-center">
+                          {score.finalWritten}
+                        </td>
+                        <td className="p-2 border text-center">
+                          {score.finalPractical}
+                        </td>
+                        <td className="p-2 border text-center font-bold">
+                          {score.total}
+                        </td>
+                        <td className="p-2 border">{score.teacherName}</td>
+                      </>
+                    )}
+                  </tr>
+                )
+              )}
             </tbody>
           </table>
         )}
 
-        <div className="average-score mb-4 text-center font-bold">اوسط نمرات: {data.averageScore}</div>
-             {/* امضاها */}
+        {/* امضاها */}
         <table className="min-w-full border border-slate-300 mb-6">
           <tbody>
             <tr>
-              <td className="font-semibold px-3 py-2 border text-center">رئیس دیپارتمنت</td>
-              <td className="font-semibold px-3 py-2 border text-center">آمر برنامه تریننگ</td>
-              <td className="font-semibold px-3 py-2 border text-center">رئیس شفاخانه</td>
+              <td className="font-semibold px-3 py-2 border text-center">
+                رئیس دیپارتمنت
+              </td>
+              <td className="font-semibold px-3 py-2 border text-center">
+                آمر برنامه تریننگ
+              </td>
+              <td className="font-semibold px-3 py-2 border text-center">
+                رئیس شفاخانه
+              </td>
             </tr>
             <tr>
-              <td className="px-3 py-2 border text-center min-h-[40px]">{data.departmentHead || "____________"}</td>
-              <td className="px-3 py-2 border text-center min-h-[40px]">{data.programHead || "____________"}</td>
-              <td className="px-3 py-2 border text-center min-h-[40px]">{data.hospitalHead || "____________"}</td>
+              <td className="px-3 py-2 border text-center min-h-[40px]">
+                {data.departmentHead || "____________"}
+              </td>
+              <td className="px-3 py-2 border text-center min-h-[40px]">
+                {data.programHead || "____________"}
+              </td>
+              <td className="px-3 py-2 border text-center min-h-[40px]">
+                {data.hospitalHead || "____________"}
+              </td>
             </tr>
           </tbody>
         </table>
-      </div> {/* پایان ref برای چاپ */}
-
+      </div>{" "}
+      {/* پایان ref برای چاپ */}
     </div>
   );
 }
-

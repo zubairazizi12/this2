@@ -1,24 +1,27 @@
-import express, { Request, Response } from "express";
-import mongoose from "mongoose";
+import express from "express";
 import {
   createRotationForm,
-  getRotationForms,
+  getRotationFormByTrainer,
   getRotationFormById,
-  updateRotationForm,
+  updateRotationFormByTrainer,
+  deleteRotationForm,
 } from "../controllers/form-I";
 
 const router = express.Router();
 
-// ✅ ایجاد فرم جدید
-router.post("/", createRotationForm);
+// ✅ مسیرهای API برای RotationForm
+router.post("/", createRotationForm); 
 
-// ✅ گرفتن فرم‌های یک ترینر خاص
-router.get("/:trainerId", getRotationForms);
+// ✅ گرفتن فرم با ID خاص (مثل فرم F)
+router.get("/form/:formId", getRotationFormById);
 
-// ✅ گرفتن فرم خاص با ID
-router.get("/form/:id", getRotationFormById);
+// ✅ گرفتن فرم بر اساس trainerId
+router.get("/:trainerId", getRotationFormByTrainer);
 
-// ✅ ویرایش فرم خاص با ID
-router.put("/form/:id", updateRotationForm);
+// ✅ به‌روزرسانی فرم بر اساس trainerId
+router.put("/:trainerId", updateRotationFormByTrainer);
+
+// ✅ حذف فرم
+router.delete("/:id", deleteRotationForm);
 
 export default router;

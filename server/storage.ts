@@ -164,21 +164,27 @@ export class DatabaseStorage implements IStorage {
     return user;
   }
 
-  async getAllUsers(): Promise<User[]> {
-    if (this.isMongoConnected) {
-      try {
-        const users = await UserModel.find().sort({ createdAt: -1 });
-        return users;
-      } catch (error) {
-        console.error('Error fetching users from MongoDB:', (error as Error).message);
-        console.log('Falling back to in-memory users');
-        this.isMongoConnected = false;
-      }
+ async getAllUsers(): Promise<User[]> {
+  if (!this.isMongoConnected) {
+    try {
+      await connectDB();
+      this.isMongoConnected = true;
+    } catch (error) {
+      console.warn('Cannot connect to MongoDB, using demo users');
+      this.createDemoUsers();
+      return Array.from(this.demoUsers.values());
     }
-    return Array.from(this.demoUsers.values()).sort((a, b) => 
-      new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-    );
   }
+
+  try {
+    const users = await UserModel.find().sort({ createdAt: -1 });
+    return users;
+  } catch (error) {
+    console.error('Error fetching users from MongoDB:', (error as Error).message);
+    return Array.from(this.demoUsers.values());
+  }
+}
+
 
   async getUserByEmail(email: string): Promise<User | undefined> {
     if (this.isMongoConnected) {

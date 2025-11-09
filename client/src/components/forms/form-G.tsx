@@ -46,40 +46,40 @@ export default function EvaluationFormG({
   );
 
   //////////////////////////////////
-   useEffect(() => {
-        if (!trainerIdProp) {
-          alert("هیچ ترینر فعالی یافت نشد!");
-          return;
-        }
-    
-        setTrainerId(trainerIdProp);
-    
-        // 👇 دریافت داده از دیتابیس
-        const fetchTrainerInfo = async () => {
-          try {
-            const res = await fetch(
-              `http://localhost:5000/api/trainers/${trainerIdProp}`
-            );
-            const result = await res.json();
-    
-            if (!res.ok) throw new Error(result.message || "خطا در دریافت ترینر");
-    
-            // فرض می‌کنیم دیتابیس این فیلدها را دارد:
-          setPersonalInfo({
-          Name: result.name || "",
-          parentType: result.fatherName || result.parentType || "",
-          trainingYear: result.trainingYear || "",
-          year: new Date().getFullYear().toString(), // یا اگر در DB داری، از result.year بگیر
-          department: result.department || "",
-          });
-          } catch (err) {
-            console.error("خطا در دریافت ترینر:", err);
-            alert("خطا در دریافت اطلاعات ترینر ❌");
-          }
-        };
-    
-        fetchTrainerInfo();
-      }, [trainerIdProp]);
+  useEffect(() => {
+    if (!trainerIdProp) {
+      alert("هیچ ترینر فعالی یافت نشد!");
+      return;
+    }
+
+    setTrainerId(trainerIdProp);
+
+    // 👇 دریافت داده از دیتابیس
+    const fetchTrainerInfo = async () => {
+      try {
+        const res = await fetch(
+          `http://localhost:5000/api/trainers/${trainerIdProp}`
+        );
+        const result = await res.json();
+
+        if (!res.ok) throw new Error(result.message || "خطا در دریافت ترینر");
+
+        // فرض می‌کنیم دیتابیس این فیلدها را دارد:
+        setPersonalInfo({
+          Name: result.trainer?.name || "",
+          parentType: result.trainer?.parentType || "",
+          trainingYear: result.trainerProgress?.currentTrainingYear || "",
+          year: "", // یا اگر در DB داری، از result.year بگیر
+          department: result.trainer?.department || "",
+        });
+      } catch (err) {
+        console.error("خطا در دریافت ترینر:", err);
+        alert("خطا در دریافت اطلاعات ترینر ❌");
+      }
+    };
+
+    fetchTrainerInfo();
+  }, [trainerIdProp]);
   /////////////////////////////////////
   const inputClass = "border px-2 py-2 w-full text-center";
 
@@ -179,8 +179,23 @@ export default function EvaluationFormG({
       }
     }
 
-    // ✅ تبدیل رشته‌ها به عدد برای ارسال مطمئن
-    const numericScores = rows.map((r) => ({
+    // 🔹 ساخت ردیف ششم با اوسط نمرات
+    const avgRow: Row = {
+      exam1Written: averageRow.exam1Combined,
+      exam1Practical: averageRow.exam1Combined,
+      exam2Written: averageRow.exam2Combined,
+      exam2Practical: averageRow.exam2Combined,
+      finalWritten: averageRow.finalCombined,
+      finalPractical: averageRow.finalCombined,
+      total: averageRow.total,
+      teacherName: "Average",
+    };
+
+    // ✅ تبدیل رشته‌ها به عدد و اضافه کردن ردیف ششم
+    const numericScores = [
+      ...rows.slice(0, 5), // ردیف‌های اصلی
+      avgRow, // ردیف اوسط
+    ].map((r) => ({
       exam1Written: Number(r.exam1Written) || 0,
       exam1Practical: Number(r.exam1Practical) || 0,
       exam2Written: Number(r.exam2Written) || 0,

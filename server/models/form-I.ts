@@ -1,78 +1,105 @@
-// models/RotationForm.ts
-import mongoose, { Schema, Document } from "mongoose";
+import mongoose, { Document, Schema } from "mongoose";
+import { TrainerProgress } from "./TrainerProgress"; // 👈 مسیر را بررسی کن
 
-interface IWeek {
-  cases: number;
-  level: string; // مثل "1", "2", "1-2"
+// ✳️ نوع هر ردیف جدول
+export interface IRotationRow {
+  number: number;
+  topic: string;
+  grade?: string;
+  professorName?: string;
+  signature?: string;
+  notes?: string;
 }
 
-interface IEnglishRow {
-  weeks: IWeek[];
-  total: number;
-}
-
-interface IPersianRow {
-  mark: number; // تغییر از string به number
-  teacherName: string;
-  teacherSign: string;
-  note: string;
-}
-
+// ✳️ نوع اصلی فرم Rotation
 export interface IRotationForm extends Document {
-  trainerId: mongoose.Schema.Types.ObjectId;
-  header: {
-    name: string;
-    parentType: string;
-    parentName: string;
-    department: string;
-    trainingYear: string;
-    rotationName: string;
-    rotationFrom: string;
-    rotationTo: string;
-    date: string;
-  };
-  persianRows: IPersianRow[];
-  persianNote: string;
-  rows: IEnglishRow[];
-  createdAt: Date;
+  trainerId: mongoose.Types.ObjectId;
+  joiningDate: string;
+  name: string;
+  parentType: string;
+  parentName?: string;
+  department: string;
+  trainingYear: string;
+  rows: IRotationRow[];
+  createdAt?: Date;
+  updatedAt?: Date;
 }
 
-const WeekSchema = new Schema<IWeek>({
-  cases: { type: Number, default: 0 },
-  level: { type: String, default: "" },
-});
-
-const EnglishRowSchema = new Schema<IEnglishRow>({
-  weeks: { type: [WeekSchema], default: [] },
-  total: { type: Number, default: 0 },
-});
-
-const PersianRowSchema = new Schema<IPersianRow>({
-  mark: { type: Number, default: 0 }, // تغییر
-  teacherName: { type: String, default: "" },
-  teacherSign: { type: String, default: "" },
-  note: { type: String, default: "" },
-});
-
-const RotationFormSchema = new Schema<IRotationForm>({
-  trainerId: { type: mongoose.Schema.Types.ObjectId, ref: "Trainer", required: true },
-  header: {
-    name: { type: String, required: true },
-    parentType: { type: String, default: "" },
-    parentName: { type: String, default: "" },
-    department: { type: String, default: "" },
-    trainingYear: { type: String, required: true },
-    rotationName: { type: String, required: true }, // فقط اینجا
-    rotationFrom: { type: String, default: "" },
-    rotationTo: { type: String, default: "" },
-    date: { type: String, default: "" },
+// ✅ اسکیمای هر ردیف جدول
+const rotationRowSchema = new Schema<IRotationRow>(
+  {
+    number: { type: Number, required: true },
+    topic: { type: String, required: true },
+    grade: { type: String, default: "" },
+    professorName: { type: String, default: "" },
+    signature: { type: String, default: "" },
+    notes: { type: String, default: "" },
   },
-  persianRows: [PersianRowSchema],
-  persianNote: { type: String, default: "" },
-  rows: [EnglishRowSchema],
-  createdAt: { type: Date, default: Date.now },
-});
-// ✅ محدود کردن یک فرم برای هر ترینر
-RotationFormSchema.index({ trainerId: 1 }, { unique: true });
+  { _id: false }
+);
 
-export default mongoose.model<IRotationForm>("RotationForm", RotationFormSchema);
+// ✅ اسکیمای اصلی فرم Rotation
+const rotationFormSchema = new Schema<IRotationForm>(
+  {
+    trainerId: {
+      type: Schema.Types.ObjectId,
+      ref: "Trainer",
+      required: true,
+    },
+    joiningDate: { type: String, required: true },
+    name: { type: String, required: true },
+    parentType: { type: String, required: true },
+    parentName: { type: String, default: "" },
+    department: { type: String, required: true },
+    trainingYear: { type: String, required: true },
+    rows: {
+      type: [rotationRowSchema],
+      validate: {
+        validator: (v: IRotationRow[]) => Array.isArray(v) && v.length > 0,
+        message: "Rows are required",
+      },
+    },
+  },
+  { timestamps: true }
+);
+
+// ✅ بعد از ذخیره فرم، لینک کردن به TrainerProgress
+rotationFormSchema.post("save", async function (doc) {
+  try {
+    const trainerId = (doc as any).trainerId;
+    const trainingYear = (doc as any).trainingYear;
+
+    if (!trainerId || !trainingYear) return;
+
+    // پیدا کردن TrainerProgress
+    const progress = await TrainerProgress.findOne({ trainer: trainerId });
+    if (!progress) {
+      console.warn(`⚠️ TrainerProgress برای ترینر ${trainerId} پیدا نشد`);
+      return;
+    }
+
+    // پیدا کردن سال مربوطه در trainingHistory
+    const yearRecord = progress.trainingHistory.find(
+      (y: any) => y.yearLabel === trainingYear
+    );
+
+    if (yearRecord) {
+      if (!yearRecord.forms) yearRecord.forms = {};
+      yearRecord.forms.formI = (doc as any)._id; // 👈 بسته به نوع فرم (D, E, F...) تنظیم کن
+      await progress.save();
+
+      console.log(`✅ RotationForm linked to TrainerProgress (${trainingYear})`);
+    } else {
+      console.warn(
+        `⚠️ trainingYear "${trainingYear}" not found in TrainerProgress for trainer ${trainerId}`
+      );
+    }
+  } catch (error) {
+    console.error("❌ Error linking RotationForm to TrainerProgress:", error);
+  }
+});
+
+// ✅ خروجی مدل
+export const RotationFormModel =
+  mongoose.models.RotationForm ||
+  mongoose.model<IRotationForm>("RotationForm", rotationFormSchema);

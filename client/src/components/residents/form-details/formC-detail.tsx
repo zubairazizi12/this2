@@ -3,7 +3,9 @@ import React, { useEffect, useState, useRef } from "react";
 import * as XLSX from "xlsx";
 
 interface FormCDetailsProps {
-  trainerId: string;
+  trainerId?: string;
+  selectedYear: string;
+  formId?: string; // ✅ اضافه شد
   onClose?: () => void;
 }
 
@@ -33,45 +35,71 @@ interface FormC {
 
 export default function FormCDetails({
   trainerId,
+  formId,
+  selectedYear,
   onClose,
 }: FormCDetailsProps) {
   const [data, setData] = useState<FormC | null>(null);
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const printRef = useRef<HTMLDivElement>(null);
 
-  // 📥 دریافت داده‌ها
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-        const res = await fetch(`/api/monograph?trainerId=${trainerId}`);
+  const fetchData = async () => {
+    if (!trainerId) return;
+    setLoading(true);
+    setError(null);
 
-        if (!res.ok) {
-          // اگر خطایی بود ولی نه شبکه، فقط داده را null قرار بده
-          setData(null);
-          return;
-        }
+    try {
+      // 1️⃣ گرفتن TrainerProgress
+      const progressRes = await fetch(
+        `http://localhost:5000/api/trainerProgress/${trainerId}`
+      );
+      if (!progressRes.ok) throw new Error("TrainerProgress یافت نشد");
+      const progress = await progressRes.json();
 
-        const result = await res.json();
+      // 2️⃣ تعیین سال هدف (انتخاب‌شده یا فعلی)
+      const targetYearLabel = selectedYear || progress.currentTrainingYear;
+      const yearData = progress.trainingHistory.find(
+        (y: any) => y.yearLabel === targetYearLabel
+      );
 
-        if (Array.isArray(result) && result.length > 0) {
-          setData(result[0]);
-        } else {
-          // اگر هیچ داده‌ای نبود
-          setData(null);
-        }
-      } catch (err) {
-        console.error("Error fetching form C:", err);
-        setData(null); // در صورت خطای شبکه، داده null
-      } finally {
-        setLoading(false);
+      if (!yearData) {
+        throw new Error(`سال ${targetYearLabel} در trainingHistory یافت نشد`);
       }
-    };
 
-    if (trainerId) fetchData();
-  }, [trainerId]);
+      // 3️⃣ گرفتن آیدی فرم C از تاریخچه‌ی آن سال
+      const formId = yearData.forms?.formC;
+      if (!formId) {
+        throw new Error(`فرم C برای ${targetYearLabel} هنوز ساخته نشده است`);
+      }
+
+      // 4️⃣ 🚀 واکشی از API مخصوص Form C (نه مسیر عمومی checklists)
+      const res = await fetch(
+        `http://localhost:5000/api/monograph?trainerId=${trainerId}&formId=${formId}`
+      );
+      if (!res.ok) throw new Error("فرم C یافت نشد");
+      const result = await res.json();
+
+      // 5️⃣ اگر لازم باشد داده‌ها را نرمال‌سازی کن
+      if (Array.isArray(result) && result.length > 0) {
+        setData(result[0]);
+      } else {
+        setData(result);
+      }
+    } catch (err: any) {
+      console.error(err);
+      setError(err?.message || "خطا در بارگذاری فرم C");
+      setData(null);
+    } finally {
+      setLoading(false);
+    }
+  };
+  // ✅ useEffect اصلاح‌شده
+  useEffect(() => {
+    fetchData();
+  }, [trainerId, selectedYear]); // 👈 وابستگی‌ها مثل فرم F
 
   // 🖨 چاپ
   const handlePrint = () => {

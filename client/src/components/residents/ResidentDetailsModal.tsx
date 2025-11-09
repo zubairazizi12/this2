@@ -10,12 +10,14 @@ import TrainerDetails from "./resident-details";
 
 interface TrainerDetailsModalProps {
   trainerId: string;
+  formId: string;
   isOpen: boolean;
   onClose: () => void;
 }
 
 export default function TrainerDetailsModal({
   trainerId,
+  formId,
   isOpen,
   onClose,
 }: TrainerDetailsModalProps) {
@@ -37,7 +39,11 @@ export default function TrainerDetailsModal({
 
         {/* محتوای اصلی */}
         <div className="p-6">
-          <TrainerDetails trainerId={trainerId} onClose={onClose} />
+          <TrainerDetails
+            trainerId={trainerId}
+            formId={formId}
+            onClose={onClose}
+          />
         </div>
       </DialogContent>
     </Dialog>
